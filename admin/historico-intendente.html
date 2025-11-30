@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <title>AsuAlerta – Histórico intendente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tabler CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-flags.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-payments.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-vendors.min.css"
+    rel="stylesheet"
+  />
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    .category-dot {
+      display:inline-block;
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      margin-right:6px;
+    }
+    .timeline {
+      border-left: 2px solid rgba(0,0,0,0.1);
+      padding-left: 16px;
+      margin-left: 4px;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 18px;
+    }
+    .timeline-point {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      position: absolute;
+      left: -7px;
+      top: 4px;
+      background: var(--tblr-blue, #206bc4);
+    }
+    .timeline-event {
+      padding-left: 4px;
+    }
+    #miniMapaDetalle {
+      width:100%;
+      height:200px;
+      border-radius:8px;
+      border:1px solid rgba(0,0,0,.1);
+      overflow:hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="navbar navbar-expand-md navbar-light d-print-none">
+      <div class="container-xl">
+        <h1 class="navbar-brand navbar-brand-autodark">
+          <span class="navbar-brand-text">
+            AsuAlerta – Histórico de reportes (Intendente)
+          </span>
+        </h1>
+        <div class="navbar-nav flex-row order-md-last">
+          <button
+            class="nav-link px-3"
+            id="themeToggle"
+            type="button"
+            title="Cambiar tema"
+          >
+            🌙
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-wrapper">
+      <div class="page-body">
+        <div class="container-xl">
+
+          <div class="page-header">
+            <div class="row align-items-center">
+              <div class="col">
+                <h2 class="page-title">Histórico completo de reportes</h2>
+                <div class="text-muted mt-1">
+                  Vista de trabajo intensivo para el intendente. Carga todos los reportes, sin límite de tiempo.
+                </div>
+              </div>
+              <div class="col-auto ms-auto">
+                <div class="btn-list">
+                  <button id="btnExportCsv" class="btn btn-outline-secondary">
+                    ⬇️ Exportar CSV (histórico)
+                  </button>
+                  <button id="btnVolver" class="btn btn-primary">
+                    ⬅️ Volver al panel intendente
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtros -->
+          <div class="card mb-3">
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <div class="form-label">Buscar</div>
+                  <input type="text" id="buscar" class="form-control" placeholder="Detalle, barrio, ciudadano...">
+                </div>
+                <div class="col-md-3">
+                  <div class="form-label">Estado</div>
+                  <select class="form-select" id="filtroEstado">
+                    <option value="">Todos</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="solucionado">Solucionado</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-label">Categoría</div>
+                  <select class="form-select" id="filtroCategoria">
+                    <option value="">Todas</option>
+                    <option value="bache">Bache</option>
+                    <option value="basural">Basural</option>
+                    <option value="arbol_caido">Árbol caído</option>
+                    <option value="cano_roto">Caño roto</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-label">Departamento</div>
+                  <select class="form-select" id="filtroDepto">
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+                <div class="col-md-3 mt-2">
+                  <div class="form-label">Fecha (desde)</div>
+                  <input type="date" class="form-control" id="fchDesde">
+                </div>
+                <div class="col-md-3 mt-2">
+                  <div class="form-label">Fecha (hasta)</div>
+                  <input type="date" class="form-control" id="fchHasta">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla -->
+          <div class="card">
+            <div class="card-body border-bottom py-2 small text-muted">
+              Tabla de trabajo. Podés hacer scroll vertical largo sin problemas.
+            </div>
+            <div class="table-responsive" style="max-height:70vh; overflow:auto;">
+              <table class="table table-vcenter card-table table-striped">
+                <thead class="sticky-top bg-body">
+                  <tr>
+                    <th>ID</th>
+                    <th>Departamento</th>
+                    <th>Categoría</th>
+                    <th>Barrio</th>
+                    <th>Detalle</th>
+                    <th>Ciudadano</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th class="text-end">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaHist">
+                  <tr><td colspan="9" class="text-center py-4">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offcanvas detalle (similar al panel principal, solo lectura) -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="detalleReportePanel">
+    <div class="offcanvas-header">
+      <div>
+        <h3 class="offcanvas-title" id="detalleTitulo">Detalle de reporte</h3>
+        <div class="text-muted small" id="detalleSubtitulo"></div>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="mb-3">
+        <span id="detalleBadgeEstado" class="badge badge-pill bg-warning me-2">Pendiente</span>
+        <span class="badge badge-pill bg-secondary" id="detalleCategoriaChip">CATEGORIA</span>
+        <span class="badge badge-pill bg-info ms-2" id="detalleDeptoChip">DEPTO</span>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Datos del ciudadano</div>
+        <div id="detalleCiudadanoNombre" class="fw-semibold">-</div>
+        <div id="detalleCiudadanoCelular" class="text-muted small">-</div>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Descripción del problema</div>
+        <div id="detalleTextoReporte">-</div>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Fechas del proceso</div>
+        <div id="detalleFechas"></div>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Ubicación en mapa</div>
+        <div id="miniMapaDetalle"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/js/tabler.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const WORKER_URL = "https://cold-base-33cf.nanotobp.workers.dev";
+    const SUPABASE_URL  = "https://wreqfthiuqwzusthjcjv.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXFmdGhpdXF3enVzdGhqY2p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MTI1NjUsImV4cCI6MjA3OTk4ODU2NX0.O9AaAi34paGxTc7ek5FTgouuTuh0J9c6hLAgik_EpWE";
+
+    document.addEventListener("DOMContentLoaded", () => {
+
+  // ----------- VALIDACIÓN DE SESIÓN CORRECTA -----------
+const token = localStorage.getItem("asu_jwt");
+const rol   = localStorage.getItem("asu_rol");
+
+if (!token || rol !== "intendente") {
+  alert("Acceso denegado. Solo intendente.");
+  window.location.href = "/admin/login.html";
+}
+
+
+});
+
+
+    const htmlEl   = document.documentElement;
+    const themeBtn = document.getElementById("themeToggle");
+    function setTemaInicial() {
+      let saved = localStorage.getItem("asu_theme");
+      if (!saved) {
+        saved = window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+                  ? "dark"
+                  : "light";
+      }
+      htmlEl.setAttribute("data-bs-theme", saved);
+      themeBtn.textContent = saved === "dark" ? "☀️" : "🌙";
+    }
+    function toggleTema() {
+      const actual = htmlEl.getAttribute("data-bs-theme") || "light";
+      const nuevo  = actual === "dark" ? "light" : "dark";
+      htmlEl.setAttribute("data-bs-theme", nuevo);
+      localStorage.setItem("asu_theme", nuevo);
+      themeBtn.textContent = nuevo === "dark" ? "☀️" : "🌙";
+    }
+    themeBtn.addEventListener("click", toggleTema);
+    setTemaInicial();
+
+    document.getElementById("btnVolver").onclick = () => {
+      window.location.href = "/panel-intendente.html";
+    };
+
+    const catColors = {
+      bache:"#d32f2f", baches:"#d32f2f",
+      basural:"#2e7d32", basura:"#2e7d32",
+      arbol_caido:"#b8860b",
+      cano_roto:"#1976d2"
+    };
+    const catLabels = {
+      bache:"BACHE", baches:"BACHE",
+      basural:"BASURAL", basura:"BASURAL",
+      arbol_caido:"ÁRBOL_CAÍDO",
+      cano_roto:"CAÑO_ROTO"
+    };
+
+    function matchCategoriaFiltro(valorFiltro, cat) {
+      if (!valorFiltro || !cat) return true;
+      if (valorFiltro === "bache") {
+        return cat === "bache" || cat === "baches";
+      }
+      if (valorFiltro === "basural") {
+        return cat === "basural" || cat === "basura";
+      }
+      return cat === valorFiltro;
+    }
+
+    let reportes = [];
+    let deptosMap = {};
+    let miniMapInstance = null;
+    const tbody = document.getElementById("tablaHist");
+
+    async function cargarDepartamentos() {
+      try {
+        const url = `${SUPABASE_URL}/rest/v1/departamentos?select=id,nombre,slug`;
+        const res = await fetch(url, {
+          headers: {
+            apikey: SUPABASE_ANON,
+            Authorization: "Bearer " + SUPABASE_ANON
+          }
+        });
+        if (!res.ok) throw new Error("Error en departamentos");
+        const data = await res.json();
+        deptosMap = {};
+        const sel = document.getElementById("filtroDepto");
+        data.forEach(d => {
+          deptosMap[d.id] = d.nombre;
+          const opt = document.createElement("option");
+          opt.value = d.id;
+          opt.textContent = d.nombre;
+          sel.appendChild(opt);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function cargarReportes() {
+  try {
+    const res = await fetch(WORKER_URL + "/listarReportes", {
+      headers: { 
+        Authorization: "Bearer " + localStorage.getItem("asu_jwt")
+      }
+    });
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Error al listar reportes");
+
+    reportes = json.data || [];
+    
+    // su renderizado sigue igual…
+  } catch (e) {
+    console.error(e);
+    alert("No se pudieron cargar los reportes.");
+  }
+}
+// ==========================
+// HISTÓRICO INTENDENTE
+// ==========================
+async function cargarHistoricoCompleto() {
+  const params = new URLSearchParams(location.search);
+  const token = params.get("token"); // recibe por ?token=
+
+  if (!token) {
+    document.body.innerHTML = "<h2>Acceso no autorizado</h2>";
+    return;
+  }
+
+  try {
+    const resp = await fetch("https://cold-base-33cf.nanotobp.workers.dev/listarReportes", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+
+    const data = await resp.json();
+
+    if (!data.ok) {
+      document.body.innerHTML = "<h2>Error cargando histórico</h2>";
+      return;
+    }
+
+    renderHistorico(data.reportes);
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", cargarHistoricoCompleto);
+
+
+    function renderTabla(lista) {
+      if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4">Sin datos</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista.map(r => {
+        const catColor = catColors[r.categoria] || "#999";
+        const catLabel = catLabels[r.categoria] || (r.categoria || "").toUpperCase();
+        const fechaStr = r.created_at
+          ? new Date(r.created_at).toLocaleString("es-PY", {
+              day:"2-digit", month:"short", year:"numeric",
+              hour:"2-digit", minute:"2-digit"
+            })
+          : "-";
+        const deptoNombre = r.departamento_id && deptosMap[r.departamento_id]
+          ? deptosMap[r.departamento_id]
+          : "-";
+
+        const estadoHtml =
+          r.estado === "solucionado"
+            ? '<span class="badge bg-success badge-pill">Solucionado</span>'
+            : '<span class="badge bg-warning badge-pill">Pendiente</span>';
+
+        return `
+        <tr>
+          <td>${r.id}</td>
+          <td>${deptoNombre}</td>
+          <td>
+            <span class="category-dot" style="background:${catColor}"></span>
+            ${catLabel}
+          </td>
+          <td>${r.barrio || "-"}</td>
+          <td>${r.detalle || "-"}</td>
+          <td>
+            ${r.nombre || "-"}<br>
+            <span class="text-muted" style="font-size:0.8rem;">${r.celular || ""}</span>
+          </td>
+          <td>${estadoHtml}</td>
+          <td>${fechaStr}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary" onclick="abrirDetalle(${r.id})">
+              Ver
+            </button>
+          </td>
+        </tr>`;
+      }).join("");
+    }
+
+    function filtrar() {
+      const q   = document.getElementById("buscar").value.toLowerCase().trim();
+      const est = document.getElementById("filtroEstado").value;
+      const cat = document.getElementById("filtroCategoria").value;
+      const dep = document.getElementById("filtroDepto").value;
+      const fd  = document.getElementById("fchDesde").value;
+      const fh  = document.getElementById("fchHasta").value;
+
+      const filtrados = reportes.filter(r => {
+        if (est && r.estado !== est) return false;
+        if (cat && !matchCategoriaFiltro(cat, r.categoria)) return false;
+        if (dep && String(r.departamento_id || "") !== dep) return false;
+
+        if (fd && r.created_at && new Date(r.created_at) < new Date(fd)) {
+          return false;
+        }
+        if (fh && r.created_at && new Date(r.created_at) > new Date(fh + "T23:59:59")) {
+          return false;
+        }
+
+        const texto =
+          (r.detalle || "").toLowerCase() +
+          " " +
+          (r.barrio  || "").toLowerCase() +
+          " " +
+          (r.nombre  || "").toLowerCase();
+
+        if (q && !texto.includes(q)) return false;
+        return true;
+      });
+
+      renderTabla(filtrados);
+    }
+
+    document.getElementById("buscar").addEventListener("input", filtrar);
+    document.getElementById("filtroEstado").addEventListener("change", filtrar);
+    document.getElementById("filtroCategoria").addEventListener("change", filtrar);
+    document.getElementById("filtroDepto").addEventListener("change", filtrar);
+    document.getElementById("fchDesde").addEventListener("change", filtrar);
+    document.getElementById("fchHasta").addEventListener("change", filtrar);
+
+    // EXPORT CSV
+    document.getElementById("btnExportCsv").onclick = () => {
+      let out = "ID,Departamento,Categoria,Barrio,Detalle,Estado,Fecha\n";
+      reportes.forEach(r => {
+        const detalle = (r.detalle || "").replace(/,/g," ");
+        const deptoNombre = r.departamento_id && deptosMap[r.departamento_id]
+          ? deptosMap[r.departamento_id]
+          : "";
+        out += `${r.id},${deptoNombre},${r.categoria},${r.barrio || ""},${detalle},${r.estado},${r.created_at || ""}\n`;
+      });
+
+      const blob = new Blob([out], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "reportes_historico_completo.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+
+    // DETALLE SIMPLE
+    const detallePanel   = document.getElementById("detalleReportePanel");
+    const detalleTitulo  = document.getElementById("detalleTitulo");
+    const detalleSub     = document.getElementById("detalleSubtitulo");
+    const detalleBadge   = document.getElementById("detalleBadgeEstado");
+    const detalleCatChip = document.getElementById("detalleCategoriaChip");
+    const detalleDeptoChip = document.getElementById("detalleDeptoChip");
+    const detalleCiudadanoNombre  = document.getElementById("detalleCiudadanoNombre");
+    const detalleCiudadanoCelular = document.getElementById("detalleCiudadanoCelular");
+    const detalleTextoReporte     = document.getElementById("detalleTextoReporte");
+    const detalleFechas           = document.getElementById("detalleFechas");
+
+    function buscarReporte(id) {
+      return reportes.find(r => r.id === id);
+    }
+
+    function renderMiniMapa(lat, lng) {
+      const div = document.getElementById("miniMapaDetalle");
+      div.innerHTML = "";
+      if (!lat || !lng) return;
+
+      miniMapInstance = L.map("miniMapaDetalle", {
+        attributionControl:false,
+        zoomControl:false,
+        dragging:false,
+        scrollWheelZoom:false,
+        doubleClickZoom:false
+      }).setView([lat,lng], 16);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom:18
+      }).addTo(miniMapInstance);
+
+      L.marker([lat,lng]).addTo(miniMapInstance);
+    }
+
+    function abrirDetalle(id) {
+      const r = buscarReporte(id);
+      if (!r) return;
+
+      const catLabel = catLabels[r.categoria] || (r.categoria || "").toUpperCase();
+      const barrio = r.barrio || "Sin barrio";
+      const deptoNombre = r.departamento_id && deptosMap[r.departamento_id]
+        ? deptosMap[r.departamento_id]
+        : "Sin asignar";
+
+      detalleTitulo.textContent = `Reporte #${r.id}`;
+      detalleSub.textContent    = `${catLabel} · ${barrio} · ${deptoNombre}`;
+
+      detalleCatChip.textContent = catLabel;
+      detalleDeptoChip.textContent = deptoNombre;
+
+      const cColor = catColors[r.categoria] || "#666";
+      detalleCatChip.style.backgroundColor = cColor;
+      detalleCatChip.style.borderColor = cColor;
+
+      if (r.estado === "solucionado") {
+        detalleBadge.textContent = "Solucionado";
+        detalleBadge.classList.remove("bg-warning");
+        detalleBadge.classList.add("bg-success");
+      } else {
+        detalleBadge.textContent = "Pendiente";
+        detalleBadge.classList.remove("bg-success");
+        detalleBadge.classList.add("bg-warning");
+      }
+
+      detalleCiudadanoNombre.textContent  = r.nombre || "-";
+      detalleCiudadanoCelular.textContent = r.celular || "-";
+      detalleTextoReporte.textContent     = r.detalle || "Sin descripción.";
+
+      const partes = [];
+      if (r.created_at) {
+        partes.push(
+          `Creado: <b>${
+            new Date(r.created_at).toLocaleString("es-PY", {
+              day:"2-digit", month:"short", year:"numeric",
+              hour:"2-digit", minute:"2-digit"
+            })
+          }</b>`
+        );
+      }
+      if (r.resuelto_at) {
+        partes.push(
+          `Resuelto: <b>${
+            new Date(r.resuelto_at).toLocaleString("es-PY", {
+              day:"2-digit", month:"short", year:"numeric",
+              hour:"2-digit", minute:"2-digit"
+            })
+          }</b>`
+        );
+      }
+      detalleFechas.innerHTML = partes.join("<br>") || "-";
+
+      renderMiniMapa(r.lat, r.lng);
+
+      const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(detallePanel);
+      bsOffcanvas.show();
+    }
+    window.abrirDetalle = abrirDetalle;
+
+    (async () => {
+      await cargarDepartamentos();
+      await cargarReportes();
+    })();
+  </script>
+</body>
+</html>

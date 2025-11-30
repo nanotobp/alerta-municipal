@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <title>AsuAlerta – Mapa histórico</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tabler CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-flags.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-payments.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-vendors.min.css"
+    rel="stylesheet"
+  />
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+
+  <!-- Leaflet + MarkerCluster -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
+  <style>
+    #mapHist {
+      width:100%;
+      height:100%;
+      min-height:80vh;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="navbar navbar-expand-md navbar-light d-print-none">
+      <div class="container-xl">
+        <h1 class="navbar-brand navbar-brand-autodark">
+          <span class="navbar-brand-text">
+            AsuAlerta – Mapa histórico (Intendente)
+          </span>
+        </h1>
+        <div class="navbar-nav flex-row order-md-last">
+          <button
+            class="nav-link px-3"
+            id="themeToggle"
+            type="button"
+            title="Cambiar tema"
+          >
+            🌙
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-wrapper">
+      <div class="page-body">
+        <div class="container-xl">
+
+          <div class="row mb-3">
+            <div class="col">
+              <div class="card">
+                <div class="card-body">
+                  <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                      <div class="form-label">Estado</div>
+                      <select id="filtroEstado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="solucionado">Solucionado</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="form-label">Categoría</div>
+                      <select id="filtroCategoria" class="form-select">
+                        <option value="">Todas</option>
+                        <option value="bache">Bache</option>
+                        <option value="basural">Basural</option>
+                        <option value="arbol_caido">Árbol caído</option>
+                        <option value="cano_roto">Caño roto</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <div class="form-label">Departamento</div>
+                      <select id="filtroDepto" class="form-select">
+                        <option value="">Todos</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <button id="btnAplicar" class="btn btn-primary w-100">
+                        Aplicar filtros
+                      </button>
+                    </div>
+                  </div>
+                  <div class="small text-muted mt-2">
+                    Vista pensada para exploración histórica. Puede tardar algunos segundos si hay muchos reportes.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body p-0" style="height:75vh;">
+              <div id="mapHist"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/js/tabler.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <script>
+    const WORKER_URL = "https://cold-base-33cf.nanotobp.workers.dev";
+    const SUPABASE_URL  = "https://wreqfthiuqwzusthjcjv.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXFmdGhpdXF3enVzdGhqY2p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MTI1NjUsImV4cCI6MjA3OTk4ODU2NX0.O9AaAi34paGxTc7ek5FTgouuTuh0J9c6hLAgik_EpWE";
+
+    document.addEventListener("DOMContentLoaded", () => {
+
+  // ----------- VALIDACIÓN DE SESIÓN CORRECTA -----------
+const token = localStorage.getItem("asu_jwt");
+const rol   = localStorage.getItem("asu_rol");
+
+if (!token || rol !== "intendente") {
+  alert("Acceso denegado. Solo intendente.");
+  window.location.href = "/admin/login.html";
+}
+
+
+});
+
+
+    const htmlEl   = document.documentElement;
+    const themeBtn = document.getElementById("themeToggle");
+    function setTemaInicial() {
+      let saved = localStorage.getItem("asu_theme");
+      if (!saved) {
+        saved = window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+                  ? "dark"
+                  : "light";
+      }
+      htmlEl.setAttribute("data-bs-theme", saved);
+      themeBtn.textContent = saved === "dark" ? "☀️" : "🌙";
+    }
+    function toggleTema() {
+      const actual = htmlEl.getAttribute("data-bs-theme") || "light";
+      const nuevo  = actual === "dark" ? "light" : "dark";
+      htmlEl.setAttribute("data-bs-theme", nuevo);
+      localStorage.setItem("asu_theme", nuevo);
+      themeBtn.textContent = nuevo === "dark" ? "☀️" : "🌙";
+    }
+    themeBtn.addEventListener("click", toggleTema);
+    setTemaInicial();
+
+    const catLabels = {
+      bache:"BACHE", baches:"BACHE",
+      basural:"BASURAL", basura:"BASURAL",
+      arbol_caido:"ÁRBOL_CAÍDO",
+      cano_roto:"CAÑO_ROTO"
+    };
+
+    function matchCategoriaFiltro(valorFiltro, cat) {
+      if (!valorFiltro || !cat) return true;
+      if (valorFiltro === "bache") {
+        return cat === "bache" || cat === "baches";
+      }
+      if (valorFiltro === "basural") {
+        return cat === "basural" || cat === "basura";
+      }
+      return cat === valorFiltro;
+    }
+
+    let mapa = null;
+    let cluster = null;
+    let reportes = [];
+    let deptosMap = {};
+
+    async function cargarDepartamentos() {
+      try {
+        const url = `${SUPABASE_URL}/rest/v1/departamentos?select=id,nombre,slug`;
+        const res = await fetch(url, {
+          headers: {
+            apikey: SUPABASE_ANON,
+            Authorization: "Bearer " + SUPABASE_ANON
+          }
+        });
+        if (!res.ok) throw new Error("Error en departamentos");
+        const data = await res.json();
+        deptosMap = {};
+        const sel = document.getElementById("filtroDepto");
+        data.forEach(d => {
+          deptosMap[d.id] = d.nombre;
+          const opt = document.createElement("option");
+          opt.value = d.id;
+          opt.textContent = d.nombre;
+          sel.appendChild(opt);
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function cargarReportes() {
+  try {
+    const res = await fetch(WORKER_URL + "/listarReportes", {
+      headers: { 
+        Authorization: "Bearer " + localStorage.getItem("asu_jwt")
+      }
+    });
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Error al listar reportes");
+
+    reportes = json.data || [];
+    
+    // su renderizado sigue igual…
+  } catch (e) {
+    console.error(e);
+    alert("No se pudieron cargar los reportes.");
+  }
+}
+// ==========================
+// MAPA HISTÓRICO
+// ==========================
+async function cargarMapaHistorico() {
+  const params = new URLSearchParams(location.search);
+  const token = params.get("token");
+
+  if (!token) {
+    alert("Sesión inválida");
+    return;
+  }
+
+  const resp = await fetch("https://cold-base-33cf.nanotobp.workers.dev/listarReportes", {
+    headers: { "Authorization": "Bearer " + token }
+  });
+
+  const data = await resp.json();
+
+  if (!data.ok) {
+    alert("No se pudo cargar el mapa.");
+    return;
+  }
+
+  renderMapa(data.reportes);
+}
+
+document.addEventListener("DOMContentLoaded", cargarMapaHistorico);
+
+
+    function renderMapa(baseLista) {
+      const lista = baseLista || reportes;
+
+      if (!mapa) {
+        mapa = L.map("mapHist").setView([-25.28, -57.64], 12);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19
+        }).addTo(mapa);
+      }
+
+      if (cluster) {
+        mapa.removeLayer(cluster);
+      }
+
+      cluster = L.markerClusterGroup();
+
+      lista.forEach(r => {
+        if (!r.lat || !r.lng) return;
+        const catLabel = catLabels[r.categoria] || (r.categoria || "");
+        const deptoNombre = r.departamento_id && deptosMap[r.departamento_id]
+          ? deptosMap[r.departamento_id]
+          : "";
+        const fecha = r.created_at ? r.created_at.slice(0,10) : "";
+        const marker = L.marker([r.lat, r.lng]);
+        marker.bindPopup(`#${r.id} – ${catLabel}<br>${deptoNombre}<br>${fecha} · ${r.estado}`);
+        cluster.addLayer(marker);
+      });
+
+      mapa.addLayer(cluster);
+    }
+
+    function aplicarFiltros() {
+      const est = document.getElementById("filtroEstado").value;
+      const cat = document.getElementById("filtroCategoria").value;
+      const dep = document.getElementById("filtroDepto").value;
+
+      const filtrados = reportes.filter(r => {
+        if (est && r.estado !== est) return false;
+        if (cat && !matchCategoriaFiltro(cat, r.categoria)) return false;
+        if (dep && String(r.departamento_id || "") !== dep) return false;
+        return true;
+      });
+
+      renderMapa(filtrados);
+    }
+
+    document.getElementById("btnAplicar").onclick = aplicarFiltros;
+
+    (async () => {
+      await cargarDepartamentos();
+      await cargarReportes();
+    })();
+  </script>
+</body>
+</html>

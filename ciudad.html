@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>AsuAlerta – Ciudad</title>
+  <meta name="theme-color" content="#d32f2f" />
+
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css" />
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-L45KW3KDSZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-L45KW3KDSZ');
+  </script>
+</head>
+
+<body>
+  <header id="header">
+    <div class="header-left">
+      <div class="header-logo-row">
+        <img src="https://codigocenter.com/logo/muni.png"
+             alt="Municipalidad de Asunción"
+             class="muni-logo" />
+        <!--
+        <div class="header-texts">
+          <span class="header-title">AsuAlerta</span>
+          <span class="header-subtitle">Municipalidad de Asunción</span>
+        </div>
+        -->
+      </div>
+      <div class="header-meta-row">
+        <span id="fechaHeader" class="fecha"></span>
+        <div class="weather-box">
+          <i id="weatherIcon" class="wi wi-day-sunny weather-icon-anim"></i>
+          <span id="weatherTemp">--°C</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="themeToggle" class="circle-btn" title="Cambiar tema">◐</button>
+      <button id="menuBtn" class="circle-btn" title="Menú">☰</button>
+    </div>
+  </header>
+
+  <aside id="sideMenu">
+    <button id="closeMenu" class="close-btn">×</button>
+    <h2 class="menu-title">AsuAlerta</h2>
+    <p class="menu-sub">Vista ciudadana</p>
+    <nav class="menu-nav">
+      <a href="estadisticas.html">📊 Estadísticas</a>
+      <a href="ciudad.html?tab=reportes">📘 Reportes ciudadanos</a>
+      <a href="ciudad.html?tab=acciones">🏛️ Acciones municipales</a>
+      <a href="index.html">⬅ Volver al mapa</a>
+    </nav>
+  </aside>
+
+  <main class="ciudad-main">
+    <!-- TABS PRINCIPALES -->
+    <section class="top-tabs">
+      <button id="tabAcciones" class="tab-btn">🏛️ Acciones municipales</button>
+      <button id="tabReportes" class="tab-btn">📘 Reportes ciudadanos</button>
+    </section>
+
+    <!-- FILTROS TIEMPO -->
+    <section class="filtros-tiempo">
+      <button class="filtro-tiempo active" data-dias="1">Hoy</button>
+      <button class="filtro-tiempo" data-dias="7">7 días</button>
+      <button class="filtro-tiempo" data-dias="30">30 días</button>
+      <button class="filtro-tiempo" data-dias="365">Total</button>
+    </section>
+
+    <!-- CHIPS SOLO PARA ACCIONES -->
+    <!-- CATEGORÍAS ACCIONES (dropdown dentro del contenedor original) -->
+<section id="chipsCategorias" class="dropdown-categorias">
+  <select id="selectCategoria" class="select-cat">
+    <option value="">Todas las categorías</option>
+  </select>
+</section>
+
+
+
+    <!-- TABS LISTA / MAPA -->
+    <section class="view-tabs">
+      <button id="viewLista" class="view-btn active">📋 Lista</button>
+      <button id="viewMapa" class="view-btn">🗺️ Mapa</button>
+    </section>
+
+    <!-- CONTENIDO LISTA -->
+    <section id="vistaLista" class="list-section">
+      <h2 class="list-title" id="tituloLista"></h2>
+      <p class="list-subtitle" id="subLista"></p>
+      <div id="listaCiudad" class="cards-grid"></div>
+    </section>
+
+    <!-- CONTENIDO MAPA -->
+    <section id="vistaMapa" class="map-card" style="display:none;">
+      <div id="mapCiudad"></div>
+    </section>
+  </main>
+
+  <!-- MODAL VISOR DE FOTOS (reportes / acciones) -->
+  <div id="fotoModal" class="foto-modal" style="display:none;">
+    <div class="foto-modal-backdrop"></div>
+    <div class="foto-modal-content">
+      <button id="fotoModalClose" class="foto-modal-close" type="button">×</button>
+      <button id="fotoModalPrev" class="foto-modal-nav foto-modal-prev" type="button">‹</button>
+      <img id="fotoModalImg" alt="Foto" />
+      <button id="fotoModalNext" class="foto-modal-nav foto-modal-next" type="button">›</button>
+    </div>
+  </div>
+
+  <footer class="main-footer">
+    <p>
+      Esta vista resume tanto las acciones municipales como los reportes de la ciudadanía
+      en el periodo seleccionado.
+    </p>
+    <br>
+    <p class="copyright"><strong>
+      © Alertas 2025 – Todos los derechos reservados.
+    </strong></p>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="ui.js"></script>
+  <script type="module" src="clima.js"></script>
+  <script type="module" src="ciudad.js"></script>
+</body>
+</html>

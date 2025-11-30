@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <title>AsuAlerta – Panel operador</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tabler CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-flags.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-payments.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-vendors.min.css"
+    rel="stylesheet"
+  />
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+
+  <!-- Leaflet + MarkerCluster -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
+  <style>
+    .category-dot {
+      display:inline-block;
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      margin-right:6px;
+    }
+    .foto-thumb {
+      width:40px;
+      height:40px;
+      object-fit:cover;
+      border-radius:4px;
+      margin-right:4px;
+      cursor:pointer;
+      border:1px solid rgba(0,0,0,0.06);
+    }
+    .stat-label {
+      font-size:0.8rem;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      color:rgba(0,0,0,.6);
+    }
+    [data-bs-theme="dark"] .stat-label {
+      color:rgba(255,255,255,.6);
+    }
+    .stat-number {
+      font-size:1.7rem;
+      font-weight:600;
+    }
+    .stat-caption {
+      font-size:0.8rem;
+      color:rgba(0,0,0,.55);
+    }
+    [data-bs-theme="dark"] .stat-caption {
+      color:rgba(255,255,255,.55);
+    }
+    .badge-pill {
+      border-radius:999px;
+    }
+    .acciones-fotos img {
+      width:52px;
+      height:52px;
+      object-fit:cover;
+      border-radius:6px;
+      margin-right:4px;
+      margin-top:4px;
+      border:1px solid rgba(0,0,0,0.08);
+      cursor:pointer;
+    }
+    /* Timeline acciones móviles */
+    .timeline {
+      border-left: 2px solid rgba(0,0,0,0.1);
+      padding-left: 16px;
+      margin-left: 4px;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 18px;
+    }
+    .timeline-point {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      position: absolute;
+      left: -7px;
+      top: 4px;
+      background: var(--tblr-blue, #206bc4);
+    }
+    .timeline-event {
+      padding-left: 4px;
+    }
+    #miniMapaDetalle {
+      width:100%;
+      height:200px;
+      border-radius:8px;
+      border:1px solid rgba(0,0,0,.1);
+      overflow:hidden;
+    }
+  </style>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-L45KW3KDSZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-L45KW3KDSZ');
+  </script>
+</head>
+<body>
+  <div class="page">
+    <!-- NAVBAR -->
+    <header class="navbar navbar-expand-md navbar-light d-print-none">
+      <div class="container-xl">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+          <span class="navbar-brand-text">
+            AsuAlerta – Operador
+          </span>
+        </h1>
+
+        <div class="navbar-nav flex-row order-md-last">
+          <button
+            class="nav-link px-3"
+            id="themeToggle"
+            type="button"
+            title="Cambiar tema"
+          >
+            🌙
+          </button>
+          <button
+            id="btnFullScreen"
+            class="nav-link px-3"
+            type="button"
+            title="Pantalla completa"
+          >
+            ⛶
+          </button>
+          <div class="nav-item dropdown">
+            <a class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" href="#">
+              <span class="avatar avatar-sm">OP</span>
+              <div class="d-none d-xl-block ps-2">
+                <div id="opEmailLabel">Operador</div>
+                <div class="mt-1 small text-muted" id="opDeptoLabel">Departamento</div>
+              </div>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              <a href="/operador-movil.html" class="dropdown-item">📱 Modo móvil</a>
+              <a href="/index.html" class="dropdown-item">🗺️ Mapa ciudadano</a>
+              <a href="/ciudad.html?tab=acciones" class="dropdown-item">🏛️ Acciones visibles</a>
+              <div class="dropdown-divider"></div>
+              <a id="btnLogout" href="javascript:void(0)" class="dropdown-item">Cerrar sesión</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="collapse navbar-collapse" id="navbar-menu">
+          <div class="navbar-nav">
+            <a class="nav-link active" href="/panel-operador.html">
+              <span class="nav-link-icon d-md-none d-lg-inline-block">
+                🖥️
+              </span>
+              <span class="nav-link-title">
+                Panel operador
+              </span>
+            </a>
+            <a class="nav-link" href="/operador-movil.html">
+              📱 Modo móvil
+            </a>
+            <a class="nav-link" href="/index.html">
+              🗺️ Mapa ciudadano
+            </a>
+            <a class="nav-link" href="/ciudad.html?tab=acciones">
+              🏛️ Acciones visibles
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENIDO -->
+    <div class="page-wrapper">
+      <div class="page-body">
+        <div class="container-xl">
+
+          <!-- TITULO -->
+          <div class="page-header d-print-none">
+            <div class="row align-items-center">
+              <div class="col">
+                <h2 class="page-title">
+                  Panel de operador municipal
+                </h2>
+                <div class="text-muted mt-1">
+                  Gestioná los reportes asignados a tu departamento y marcá los casos solucionados.
+                </div>
+                <div id="bannerDepto" class="alert alert-info mt-2 mb-1 py-2">
+                  Departamento asignado: <b id="bannerDeptoTxt">-</b>
+                </div>
+              </div>
+              <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                  <button id="btnExcel" class="btn btn-outline-secondary">
+                    ⬇️ Exportar CSV
+                  </button>
+                  <button id="btnMapaDepto" class="btn btn-primary">
+                    🗺️ Ver mapa del departamento
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LEYENDA CATEGORÍAS -->
+          <div class="mb-3">
+            <span class="me-3 small text-muted">Leyenda categorías:</span>
+            <span class="badge badge-pill me-2" style="background:#d32f2f;">Bache</span>
+            <span class="badge badge-pill me-2" style="background:#2e7d32;">Basura</span>
+            <span class="badge badge-pill me-2" style="background:#b8860b;">Árbol caído</span>
+            <span class="badge badge-pill me-2" style="background:#1976d2;">Caño roto</span>
+          </div>
+
+          <!-- STATS PRINCIPALES -->
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Total reportes (tu depto)</div>
+                  <div class="stat-number" id="stat_total">0</div>
+                  <div class="stat-caption">Incluye pendientes y solucionados.</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Pendientes</div>
+                  <div class="stat-number text-warning" id="stat_pendientes">0</div>
+                  <div class="stat-caption">Aún sin marcar como solucionados.</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Solucionados</div>
+                  <div class="stat-number text-success" id="stat_solucionados">0</div>
+                  <div class="stat-caption">Reportes marcados como resueltos.</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Tiempo promedio de resolución</div>
+                  <div class="stat-number" id="stat_tiempo">-</div>
+                  <div class="stat-caption">Solo sobre reportes solucionados.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STATS DE HOY / ATRASADOS -->
+          <div class="row row-deck row-cards mb-4">
+            <div class="col-sm-6 col-lg-4">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Nuevos hoy</div>
+                  <div class="stat-number" id="stat_nuevos_hoy">0</div>
+                  <div class="stat-caption">Reportes creados en la fecha actual.</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Solucionados hoy</div>
+                  <div class="stat-number text-success" id="stat_sol_hoy">0</div>
+                  <div class="stat-caption">Casos cerrados durante el día de hoy.</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Pendientes &gt; 48h</div>
+                  <div class="stat-number text-danger" id="stat_atrasados">0</div>
+                  <div class="stat-caption">Priorizar estos reportes en la gestión.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LISTADO DE REPORTES -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                Reportes asignados a tu departamento
+                <span class="text-muted small ms-2">(Atajos: R refresca, F buscador, X resuelve)</span>
+              </div>
+              <div class="card-actions">
+                <button id="btnRefrescar" class="btn btn-icon" type="button" title="Refrescar (R)">
+                  ⟳
+                </button>
+              </div>
+            </div>
+            <div class="card-body border-bottom py-3">
+              <div class="row g-2">
+                <div class="col-md-3">
+                  <div class="form-label">Buscar</div>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="buscar"
+                    placeholder="Detalle, barrio o nombre..."
+                  />
+                </div>
+                <div class="col-md-3">
+                  <div class="form-label">Estado</div>
+                  <select class="form-select" id="filtroEstado">
+                    <option value="">Todos</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="solucionado">Solucionado</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-label">Categoría</div>
+                  <select class="form-select" id="filtroCategoria">
+                    <option value="">Todas</option>
+                    <option value="bache">Bache</option>
+                    <option value="basura">Basura</option>
+                    <option value="arbol_caido">Árbol caído</option>
+                    <option value="cano_roto">Caño roto</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <div class="form-label">Fecha (desde)</div>
+                  <input type="date" class="form-control" id="fchDesde">
+                </div>
+                <div class="col-md-3 mt-2 mt-md-0">
+                  <div class="form-label">Fecha (hasta)</div>
+                  <input type="date" class="form-control" id="fchHasta">
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-vcenter card-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Categoría</th>
+                    <th>Barrio</th>
+                    <th>Detalle</th>
+                    <th>Ciudadano</th>
+                    <th>Fotos</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th class="text-end">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaReportesOp">
+                  <tr><td colspan="9" class="text-center py-4">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL LATERAL DETALLE REPORTE -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="detalleReportePanel">
+    <div class="offcanvas-header">
+      <div>
+        <h3 class="offcanvas-title" id="detalleTitulo">Detalle de reporte</h3>
+        <div class="text-muted small" id="detalleSubtitulo"></div>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="mb-3">
+        <span id="detalleBadgeEstado" class="badge badge-pill bg-warning me-2">Pendiente</span>
+        <span class="badge badge-pill bg-secondary" id="detalleCategoriaChip">CATEGORIA</span>
+      </div>
+
+      <!-- Datos ciudadano -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Datos del ciudadano</div>
+        <div id="detalleCiudadanoNombre" class="fw-semibold">-</div>
+        <div id="detalleCiudadanoCelular" class="text-muted small">-</div>
+        <div class="mt-2">
+          <button id="btnWhatsApp" class="btn btn-success btn-sm">
+            📞 Contactar por WhatsApp
+          </button>
+        </div>
+      </div>
+
+      <!-- Descripción problema -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Descripción del problema</div>
+        <div id="detalleTextoReporte">-</div>
+      </div>
+
+      <!-- Fechas -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Fechas del proceso</div>
+        <div id="detalleFechas"></div>
+      </div>
+
+      <!-- Mini dashboard -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Resumen para esta categoría / barrio</div>
+        <div id="detalleMiniDashboard" class="small"></div>
+      </div>
+
+      <!-- Mapa mini -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Ubicación en mapa</div>
+        <div id="miniMapaDetalle"></div>
+        <div class="mt-2 d-flex justify-content-between">
+          <div id="alertaDuplicados" class="alert alert-warning d-none mb-0 me-2 py-1 px-2 flex-grow-1">
+            ⚠️ Hay reportes cercanos a esta ubicación.
+            <div id="listaDuplicados" class="small mt-1"></div>
+          </div>
+          <button id="btnAbrirEnMapa" class="btn btn-outline-primary btn-sm ms-2">
+            🗺️ Abrir en mapa grande
+          </button>
+        </div>
+      </div>
+
+      <!-- Fotos ciudadano -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Fotos aportadas por el ciudadano</div>
+        <div id="detalleFotosCiudadano" class="d-flex flex-wrap"></div>
+      </div>
+
+      <hr class="my-3"/>
+
+      <!-- Acciones móviles -->
+      <div class="mb-2 d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">
+            Acciones realizadas por operadores móviles
+          </div>
+          <div class="small text-muted">
+            Intervenciones municipales registradas desde el campo.
+          </div>
+        </div>
+      </div>
+      <div id="accionesListado"></div>
+
+      <div class="mt-3 text-end">
+        <button id="btnSolucionarDetalle" class="btn btn-success">
+          ✓ Marcar como solucionado
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL MAPA DEPARTAMENTO -->
+  <div class="modal modal-blur fade" id="modalMapaDepto" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Mapa del departamento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div id="mapDepto" style="height:100%;width:100%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS Tabler / Bootstrap / Leaflet -->
+  <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/js/tabler.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <script>
+    // ============================
+    // CONFIG
+    // ============================
+    const WORKER_URL = "https://cold-base-33cf.nanotobp.workers.dev";
+
+    const SUPABASE_URL  = "https://wreqfthiuqwzusthjcjv.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXFmdGhpdXF3enVzdGhqY2p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MTI1NjUsImV4cCI6MjA3OTk4ODU2NX0.O9AaAi34paGxTc7ek5FTgouuTuh0J9c6hLAgik_EpWE";
+
+    const token = localStorage.getItem("asu_jwt");
+    const rol   = localStorage.getItem("asu_rol") || "";
+    const email = localStorage.getItem("asu_email") || "";
+    const depto = localStorage.getItem("asu_departamento") || "";
+
+    if (!token || rol !== "operador") {
+      alert("Sesión inválida o rol incorrecto. Volvé a iniciar sesión.");
+      window.location.href = "/login";
+    }
+
+    document.getElementById("opEmailLabel").textContent = email || "Operador";
+    document.getElementById("opDeptoLabel").textContent = depto || "Departamento";
+    document.getElementById("bannerDeptoTxt").textContent = depto || "-";
+
+    // ============================
+    // THEME
+    // ============================
+    const htmlEl    = document.documentElement;
+    const themeBtn  = document.getElementById("themeToggle");
+
+    function setTemaInicial() {
+      let saved = localStorage.getItem("asu_theme");
+      if (!saved) {
+        saved = window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+                  ? "dark"
+                  : "light";
+      }
+      htmlEl.setAttribute("data-bs-theme", saved);
+      themeBtn.textContent = saved === "dark" ? "☀️" : "🌙";
+    }
+
+    function toggleTema() {
+      const actual = htmlEl.getAttribute("data-bs-theme") || "light";
+      const nuevo  = actual === "dark" ? "light" : "dark";
+      htmlEl.setAttribute("data-bs-theme", nuevo);
+      localStorage.setItem("asu_theme", nuevo);
+      themeBtn.textContent = nuevo === "dark" ? "☀️" : "🌙";
+    }
+
+    themeBtn.addEventListener("click", toggleTema);
+    setTemaInicial();
+
+    // ============================
+    // LOGOUT
+    // ============================
+    document.getElementById("btnLogout").addEventListener("click", () => {
+      if (!confirm("¿Cerrar sesión?")) return;
+      localStorage.removeItem("asu_jwt");
+      localStorage.removeItem("asu_rol");
+      localStorage.removeItem("asu_email");
+      localStorage.removeItem("asu_departamento");
+      window.location.href = "/login";
+    });
+
+    // ============================
+    // FULL SCREEN
+    // ============================
+    document.getElementById("btnFullScreen").onclick = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    // ============================
+    // DATOS Y RENDER
+    // ============================
+    const catColors = {
+      bache:      "#d32f2f",
+      arbol_caido:"#b8860b",
+      basura:     "#2e7d32",
+      cano_roto:  "#1976d2"
+    };
+
+    let reportesOriginal = [];
+    let accionesCache = {}; // { reporteId: [...] }
+    let mapaDepto = null;
+    let reporteDetalleActual = null;
+    let miniMapInstance = null;
+
+    async function cargarReportes() {
+      try {
+        const res = await fetch(WORKER_URL + "/listarReportes", {
+          headers: { Authorization: "Bearer " + token }
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Error al listar reportes");
+        reportesOriginal = json.data || [];
+        renderTabla(reportesOriginal);
+        calcularStats();
+      } catch (e) {
+        console.error(e);
+        alert("No se pudieron cargar los reportes.");
+      }
+    }
+
+    function calcularStats() {
+      const tot = reportesOriginal.length;
+      const pen = reportesOriginal.filter(r => r.estado !== "solucionado").length;
+      const sol = reportesOriginal.filter(r => r.estado === "solucionado").length;
+
+      document.getElementById("stat_total").textContent        = tot;
+      document.getElementById("stat_pendientes").textContent   = pen;
+      document.getElementById("stat_solucionados").textContent = sol;
+
+      const resueltos = reportesOriginal.filter(r =>
+        r.estado === "solucionado" && r.created_at && r.resuelto_at
+      );
+
+      if (resueltos.length) {
+        let sumaHoras = 0;
+        resueltos.forEach(r => {
+          const ini = new Date(r.created_at);
+          const fin = new Date(r.resuelto_at);
+          const diffHoras = (fin - ini) / (1000 * 60 * 60);
+          sumaHoras += diffHoras;
+        });
+        const prom = sumaHoras / resueltos.length;
+        document.getElementById("stat_tiempo").textContent =
+          prom < 1 ? Math.round(prom * 60) + " min" : prom.toFixed(1) + " h";
+      } else {
+        document.getElementById("stat_tiempo").textContent = "-";
+      }
+
+      const hoyStr = new Date().toISOString().slice(0,10);
+      const nuevosHoy = reportesOriginal.filter(r =>
+        r.created_at && r.created_at.slice(0,10) === hoyStr
+      ).length;
+      const solHoy = reportesOriginal.filter(r =>
+        r.estado === "solucionado" &&
+        r.resuelto_at &&
+        r.resuelto_at.slice(0,10) === hoyStr
+      ).length;
+
+      const ahora = new Date();
+      const hace48h = new Date(ahora.getTime() - 48 * 60 * 60 * 1000);
+      const atrasados = reportesOriginal.filter(r =>
+        r.estado !== "solucionado" &&
+        r.created_at &&
+        new Date(r.created_at) < hace48h
+      ).length;
+
+      document.getElementById("stat_nuevos_hoy").textContent = nuevosHoy;
+      document.getElementById("stat_sol_hoy").textContent    = solHoy;
+      document.getElementById("stat_atrasados").textContent  = atrasados;
+    }
+
+    function renderTabla(lista) {
+      const tbody = document.getElementById("tablaReportesOp");
+
+      if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4">Sin datos</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista.map(r => {
+        const catColor = catColors[r.categoria] || "#999";
+        const fechaStr = r.created_at
+          ? new Date(r.created_at).toLocaleString("es-PY", {
+              day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"
+            })
+          : "-";
+
+        const fotosHtml = (Array.isArray(r.fotos_url) ? r.fotos_url : []).map(u => `
+          <img src="${u}" class="foto-thumb" onclick="window.open('${u}','_blank')">
+        `).join("");
+
+        const estadoHtml =
+          r.estado === "solucionado"
+            ? '<span class="badge bg-success badge-pill">Solucionado</span>'
+            : '<span class="badge bg-warning badge-pill">Pendiente</span>';
+
+        const accionesBtns = `
+          <button class="btn btn-sm btn-outline-primary me-1" onclick="abrirDetalle(${r.id})">
+            Ver
+          </button>
+          ${
+            r.estado === "pendiente"
+              ? `<button class="btn btn-sm btn-success" onclick="marcarSolucionado(${r.id})">
+                   ✓
+                 </button>`
+              : ''
+          }
+        `;
+
+        return `
+        <tr>
+          <td>${r.id}</td>
+          <td>
+            <span class="category-dot" style="background:${catColor}"></span>
+            ${(r.categoria || "").toUpperCase()}
+          </td>
+          <td>${r.barrio || "-"}</td>
+          <td>${r.detalle || "-"}</td>
+          <td>
+            ${r.nombre || "-"}<br>
+            <span class="text-muted" style="font-size:0.8rem;">${r.celular || ""}</span>
+          </td>
+          <td>${fotosHtml}</td>
+          <td>${estadoHtml}</td>
+          <td>${fechaStr}</td>
+          <td class="text-end">${accionesBtns}</td>
+        </tr>
+        `;
+      }).join("");
+    }
+
+    function filtrar() {
+      const q   = document.getElementById("buscar").value.toLowerCase().trim();
+      const est = document.getElementById("filtroEstado").value;
+      const cat = document.getElementById("filtroCategoria").value;
+      const fd  = document.getElementById("fchDesde").value;
+      const fh  = document.getElementById("fchHasta").value;
+
+      const filtrados = reportesOriginal.filter(r => {
+        if (est && r.estado !== est) return false;
+        if (cat && r.categoria !== cat) return false;
+
+        if (fd && r.created_at && new Date(r.created_at) < new Date(fd)) {
+          return false;
+        }
+        if (fh && r.created_at && new Date(r.created_at) > new Date(fh + "T23:59:59")) {
+          return false;
+        }
+
+        const texto =
+          (r.detalle || "").toLowerCase() +
+          " " +
+          (r.barrio  || "").toLowerCase() +
+          " " +
+          (r.nombre  || "").toLowerCase();
+
+        if (q && !texto.includes(q)) return false;
+        return true;
+      });
+
+      renderTabla(filtrados);
+    }
+
+    document.getElementById("buscar").addEventListener("input", filtrar);
+    document.getElementById("filtroEstado").addEventListener("change", filtrar);
+    document.getElementById("filtroCategoria").addEventListener("change", filtrar);
+    document.getElementById("fchDesde").addEventListener("change", filtrar);
+    document.getElementById("fchHasta").addEventListener("change", filtrar);
+    document.getElementById("btnRefrescar").addEventListener("click", cargarReportes);
+
+    // ============================
+    // ACCIONES – MARCAR SOLUCIONADO
+    // ============================
+    async function marcarSolucionado(id) {
+      if (!confirm("¿Marcar este reporte como solucionado?")) return;
+
+      try {
+        const res = await fetch(WORKER_URL + "/marcarSolucionado", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token
+          },
+          body: JSON.stringify({ id })
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Error al marcar como solucionado");
+        await cargarReportes();
+      } catch (e) {
+        console.error(e);
+        alert("No se pudo marcar como solucionado.");
+      }
+    }
+    window.marcarSolucionado = marcarSolucionado;
+
+    // ============================
+    // SUPABASE – ACCIONES MUNICIPALES
+    // ============================
+    async function obtenerAccionesPorReporte(reporteId) {
+      if (!reporteId) return [];
+      if (accionesCache[reporteId]) return accionesCache[reporteId];
+
+      try {
+        const url = `${SUPABASE_URL}/rest/v1/acciones_municipales?reporte_id=eq.${reporteId}&select=*`;
+        const res = await fetch(url, {
+          headers: {
+            apikey: SUPABASE_ANON,
+            Authorization: "Bearer " + SUPABASE_ANON
+          }
+        });
+        if (!res.ok) throw new Error("Error al cargar acciones");
+        const data = await res.json();
+        accionesCache[reporteId] = Array.isArray(data) ? data : [];
+        return accionesCache[reporteId];
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
+    }
+
+    // ============================
+    // PANEL DETALLE (OFFCANVAS)
+    // ============================
+    const detallePanel   = document.getElementById("detalleReportePanel");
+    const detalleTitulo  = document.getElementById("detalleTitulo");
+    const detalleSub     = document.getElementById("detalleSubtitulo");
+    const detalleBadge   = document.getElementById("detalleBadgeEstado");
+    const detalleCatChip = document.getElementById("detalleCategoriaChip");
+    const detalleCiudadanoNombre  = document.getElementById("detalleCiudadanoNombre");
+    const detalleCiudadanoCelular = document.getElementById("detalleCiudadanoCelular");
+    const detalleTextoReporte     = document.getElementById("detalleTextoReporte");
+    const detalleFechas           = document.getElementById("detalleFechas");
+    const detalleFotosCiudadano   = document.getElementById("detalleFotosCiudadano");
+    const detalleMiniDashboard    = document.getElementById("detalleMiniDashboard");
+    const accionesListado         = document.getElementById("accionesListado");
+    const btnSolucionarDetalle    = document.getElementById("btnSolucionarDetalle");
+    const alertaDuplicados        = document.getElementById("alertaDuplicados");
+    const listaDuplicados         = document.getElementById("listaDuplicados");
+    const btnWhatsApp             = document.getElementById("btnWhatsApp");
+    const btnAbrirEnMapa          = document.getElementById("btnAbrirEnMapa");
+
+    function buscarReportePorId(id) {
+      return reportesOriginal.find(r => r.id === id);
+    }
+
+    function renderMiniDashboardStats(rep) {
+      const mismaCat = reportesOriginal.filter(r => r.categoria === rep.categoria);
+      const mismoBarrio = reportesOriginal.filter(r => r.barrio && rep.barrio && r.barrio.toLowerCase() === rep.barrio.toLowerCase());
+
+      const totalCat = mismaCat.length;
+      const totalCatPend = mismaCat.filter(r => r.estado !== "solucionado").length;
+      const totalBarrio = mismoBarrio.length;
+      const totalBarrioPend = mismoBarrio.filter(r => r.estado !== "solucionado").length;
+
+      detalleMiniDashboard.innerHTML = `
+        <div>En esta categoría: <b>${totalCat}</b> reportes, <b>${totalCatPend}</b> pendientes.</div>
+        <div>En este barrio: <b>${totalBarrio}</b> reportes, <b>${totalBarrioPend}</b> pendientes.</div>
+      `;
+    }
+
+    function renderDetalleBasico(rep) {
+      reporteDetalleActual = rep;
+
+      const catLabel = (rep.categoria || "").toUpperCase();
+      const barrio   = rep.barrio || "Sin barrio";
+      detalleTitulo.textContent = `Reporte #${rep.id}`;
+      detalleSub.textContent    = `${catLabel} · ${barrio}`;
+
+      detalleCatChip.textContent = catLabel;
+      const cColor = catColors[rep.categoria] || "#666";
+      detalleCatChip.style.backgroundColor = cColor;
+      detalleCatChip.style.borderColor = cColor;
+
+      if (rep.estado === "solucionado") {
+        detalleBadge.textContent = "Solucionado";
+        detalleBadge.classList.remove("bg-warning");
+        detalleBadge.classList.add("bg-success");
+      } else {
+        detalleBadge.textContent = "Pendiente";
+        detalleBadge.classList.remove("bg-success");
+        detalleBadge.classList.add("bg-warning");
+      }
+
+      detalleCiudadanoNombre.textContent  = rep.nombre || "-";
+      detalleCiudadanoCelular.textContent = rep.celular || "-";
+      detalleTextoReporte.textContent     = rep.detalle || "Sin descripción.";
+
+      const partesFechas = [];
+      if (rep.created_at) {
+        partesFechas.push(
+          `Creado: <b>${
+            new Date(rep.created_at).toLocaleString("es-PY", {
+              day:"2-digit", month:"short", year:"numeric",
+              hour:"2-digit", minute:"2-digit"
+            })
+          }</b>`
+        );
+      }
+      if (rep.estado === "solucionado" && rep.resuelto_at) {
+        partesFechas.push(
+          `Resuelto: <b>${
+            new Date(rep.resuelto_at).toLocaleString("es-PY", {
+              day:"2-digit", month:"short", year:"numeric",
+              hour:"2-digit", minute:"2-digit"
+            })
+          }</b>`
+        );
+      }
+      detalleFechas.innerHTML = partesFechas.join("<br/>") || "-";
+
+      detalleFotosCiudadano.innerHTML = "";
+      const fotos = Array.isArray(rep.fotos_url) ? rep.fotos_url : [];
+      if (!fotos.length) {
+        detalleFotosCiudadano.innerHTML = '<span class="text-muted small">Sin fotos adjuntas.</span>';
+      } else {
+        fotos.forEach(u => {
+          const img = document.createElement("img");
+          img.src = u;
+          img.className = "me-2 mb-2";
+          img.style.width = "72px";
+          img.style.height = "72px";
+          img.style.objectFit = "cover";
+          img.style.borderRadius = "8px";
+          img.style.cursor = "pointer";
+          img.onclick = () => window.open(u, "_blank");
+          detalleFotosCiudadano.appendChild(img);
+        });
+      }
+
+      renderMiniDashboardStats(rep);
+      renderMiniMapa(rep.lat, rep.lng);
+      verificarDuplicados(rep);
+
+      if (rep.estado === "pendiente") {
+        btnSolucionarDetalle.style.display = "inline-block";
+        btnSolucionarDetalle.onclick = () => marcarSolucionado(rep.id);
+      } else {
+        btnSolucionarDetalle.style.display = "none";
+        btnSolucionarDetalle.onclick = null;
+      }
+
+      btnWhatsApp.onclick = () => {
+        if (!rep.celular) return;
+        const numero = rep.celular.replace(/\D/g, "");
+        if (!numero) return;
+        // Asumiendo Paraguay 595, operador completa bien cel
+        window.open(`https://wa.me/595${numero}`, "_blank");
+      };
+
+      btnAbrirEnMapa.onclick = () => {
+        window.location.href = `/index.html?lat=${rep.lat}&lng=${rep.lng}&zoom=17`;
+      };
+    }
+
+    function renderMiniMapa(lat, lng) {
+      const mapDiv = document.getElementById("miniMapaDetalle");
+      mapDiv.innerHTML = "";
+      if (!lat || !lng || typeof L === "undefined") return;
+
+      miniMapInstance = L.map("miniMapaDetalle", {
+        attributionControl: false,
+        zoomControl: false,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false
+      }).setView([lat, lng], 16);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18
+      }).addTo(miniMapInstance);
+
+      L.marker([lat, lng]).addTo(miniMapInstance);
+    }
+
+    function distanciaMetros(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI/180;
+      const dLng = (lng2 - lng1) * Math.PI/180;
+      const a = Math.sin(dLat/2)**2 +
+                Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180) *
+                Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function verificarDuplicados(rep) {
+      alertaDuplicados.classList.add("d-none");
+      listaDuplicados.innerHTML = "";
+
+      const cercanos = reportesOriginal.filter(r => {
+        if (r.id === rep.id) return false;
+        if (!r.lat || !r.lng) return false;
+        const d = distanciaMetros(rep.lat, rep.lng, r.lat, r.lng);
+        return d <= 40; // 40m radio
+      });
+
+      if (!cercanos.length) return;
+
+      alertaDuplicados.classList.remove("d-none");
+      listaDuplicados.innerHTML = cercanos
+        .map(c => {
+          const fecha = c.created_at ? c.created_at.slice(0,10) : "";
+          return `• #${c.id} – ${c.categoria} (${c.estado}) ${fecha}`;
+        })
+        .join("<br>");
+    }
+
+    function renderAccionesLista(lista) {
+      accionesListado.innerHTML = "";
+
+      if (!lista.length) {
+        accionesListado.innerHTML = `
+          <div class="text-muted small">
+            Aún no hay acciones registradas.
+          </div>`;
+        return;
+      }
+
+      lista.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+
+      const cont = document.createElement("div");
+      cont.className = "timeline";
+
+      lista.forEach(a => {
+        const fechaStr = a.created_at
+          ? new Date(a.created_at).toLocaleString("es-PY", {
+              day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"
+            })
+          : "";
+
+        const fotos = Array.isArray(a.fotos_url) ? a.fotos_url : [];
+
+        const item = document.createElement("div");
+        item.className = "timeline-item";
+
+        item.innerHTML = `
+          <div class="timeline-point"></div>
+          <div class="timeline-event">
+            <div class="timeline-header">
+              <strong>${a.titulo || (a.categoria || "Acción municipal")}</strong>
+              <span class="text-muted small"> · ${fechaStr}</span>
+            </div>
+            <div class="timeline-content small mt-1">
+              <b>Operador:</b> ${a.creado_por_nombre || "N/D"}
+              ${a.creado_por_identificador ? ` (${a.creado_por_identificador})` : ""}
+              <br>
+              ${a.detalle || "Acción registrada."}
+            </div>
+            ${
+              a.observacion
+                ? `<div class="small mt-2"><b>Observación:</b> ${a.observacion}</div>`
+                : ""
+            }
+            ${
+              a.social_url
+                ? `<div class="small mt-2"><a href="${a.social_url}" target="_blank">🔗 Ver publicación</a></div>`
+                : ""
+            }
+          </div>
+        `;
+
+        if (fotos.length) {
+          const fotosDiv = document.createElement("div");
+          fotosDiv.className = "acciones-fotos mt-2";
+          fotos.forEach(u => {
+            const img = document.createElement("img");
+            img.src = u;
+            img.onclick = () => window.open(u, "_blank");
+            fotosDiv.appendChild(img);
+          });
+          item.querySelector(".timeline-event").appendChild(fotosDiv);
+        }
+
+        cont.appendChild(item);
+      });
+
+      accionesListado.appendChild(cont);
+    }
+
+    async function abrirDetalle(id) {
+      const rep = buscarReportePorId(id);
+      if (!rep) {
+        alert("Reporte no encontrado.");
+        return;
+      }
+
+      renderDetalleBasico(rep);
+      accionesListado.innerHTML = '<div class="small text-muted">Cargando acciones...</div>';
+
+      const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(detallePanel);
+      bsOffcanvas.show();
+
+      const acciones = await obtenerAccionesPorReporte(id);
+      renderAccionesLista(acciones);
+    }
+    window.abrirDetalle = abrirDetalle;
+
+    // ============================
+    // EXPORTAR CSV
+    // ============================
+    document.getElementById("btnExcel").onclick = () => {
+      const rows = reportesOriginal;
+      let out = "ID,Categoria,Barrio,Detalle,Estado,Fecha\n";
+
+      rows.forEach(r => {
+        const detalle = (r.detalle || "").replace(/,/g," ");
+        out += `${r.id},${r.categoria},${r.barrio || ""},${detalle},${r.estado},${r.created_at || ""}\n`;
+      });
+
+      const blob = new Blob([out], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "reportes_asualerta.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+
+    // ============================
+    // MAPA DEPARTAMENTO + CLUSTERING
+    // ============================
+    document.getElementById("btnMapaDepto").onclick = () => {
+      const modal = new bootstrap.Modal(document.getElementById("modalMapaDepto"));
+      modal.show();
+      setTimeout(() => inicializarMapaDepto(), 300);
+    };
+
+    function inicializarMapaDepto() {
+      if (!mapaDepto) {
+        mapaDepto = L.map("mapDepto").setView([-25.28, -57.64], 13);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19
+        }).addTo(mapaDepto);
+      }
+
+      // limpiar capas previas
+      mapaDepto.eachLayer(layer => {
+        if (layer instanceof L.MarkerClusterGroup || layer instanceof L.Marker) {
+          mapaDepto.removeLayer(layer);
+        }
+      });
+
+      const markers = L.markerClusterGroup();
+
+      reportesOriginal.forEach(r => {
+        if (r.lat && r.lng) {
+          const marker = L.marker([r.lat, r.lng]);
+          marker.bindPopup(`#${r.id} – ${r.categoria} (${r.estado})`);
+          markers.addLayer(marker);
+        }
+      });
+
+      mapaDepto.addLayer(markers);
+    }
+
+    // ============================
+    // ATAJOS DE TECLADO
+    // ============================
+    document.addEventListener("keydown", (e) => {
+      const tag = (e.target.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+
+      const k = e.key.toLowerCase();
+      if (k === "r") {
+        e.preventDefault();
+        cargarReportes();
+      } else if (k === "f") {
+        e.preventDefault();
+        document.getElementById("buscar").focus();
+      } else if (k === "x") {
+        e.preventDefault();
+        if (reporteDetalleActual && reporteDetalleActual.estado === "pendiente") {
+          marcarSolucionado(reporteDetalleActual.id);
+        }
+      }
+    });
+
+    // ============================
+    // INIT
+    // ============================
+    cargarReportes();
+  </script>
+</body>
+</html>

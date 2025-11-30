@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>AsuAlerta – Mapa ciudadano</title>
+  <meta name="theme-color" content="#d32f2f" />
+
+  <!-- Leaflet -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+
+  <!-- Weather Icons -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css" />
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-L45KW3KDSZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-L45KW3KDSZ');
+  </script>
+</head>
+
+<body>
+  <!-- HEADER -->
+  <header id="header">
+    <div class="header-left">
+      <div class="header-logo-row">
+        <img src="https://codigocenter.com/logo/muni.png"
+             alt="Municipalidad de Asunción"
+             class="muni-logo" />
+      </div>
+      <div class="header-meta-row">
+        <span id="fechaHeader" class="fecha"></span>
+        <div class="weather-box">
+          <i id="weatherIcon" class="wi wi-day-sunny weather-icon-anim"></i>
+          <span id="weatherTemp">--°C</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="themeToggle" class="circle-btn" title="Cambiar tema">
+        ◐
+      </button>
+      <button id="menuBtn" class="circle-btn" title="Menú">
+        ☰
+      </button>
+    </div>
+  </header>
+
+  <!-- MENÚ LATERAL -->
+  <aside id="sideMenu">
+    <button id="closeMenu" class="close-btn">×</button>
+    <h2 class="menu-title">AsuAlerta</h2>
+    <p class="menu-sub">Herramientas ciudadanas</p>
+
+    <nav class="menu-nav">
+      <a href="estadisticas.html">📊 Estadísticas</a>
+      <a href="ciudad.html?tab=reportes">📘 Reportes ciudadanos</a>
+      <a href="ciudad.html?tab=acciones">🏛️ Acciones municipales</a>
+    </nav>
+
+    <div class="contact-box">
+      <h3>Contacto Municipalidad</h3>
+      <p>Tel: (+595 21) 627 3000</p>
+      <p>WhatsApp: +595 986 128 777</p>
+      <p>Lunes a Viernes de 07:00 a 16:00hs</p>
+      <p>Sábados de 07:30 a 11:30</p>
+    </div>
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main>
+    <!-- MAPA -->
+    <section class="map-card">
+      <div id="map"></div>
+    </section>
+
+    <!-- FILTRO DE RANGO DE DÍAS -->
+    <section class="rango-fecha">
+      <label for="rangoDias">Ver en el mapa:</label>
+      <select id="rangoDias">
+        <option value="1">Hoy</option>
+        <option value="7" selected>Últimos 7 días</option>
+        <option value="30">Últimos 30 días</option>
+        <option value="365">Todo el año</option>
+      </select>
+    </section>
+
+    <!-- BOTONES PRINCIPALES -->
+    <section class="main-buttons">
+      <button id="btnReportar" class="primary-btn">
+        📍 Reportar problema
+      </button>
+      <button id="btnAccionesMunicipales" class="secondary-btn">
+        🏛️ Acciones municipales
+      </button>
+    </section>
+
+    <!-- FORMULARIO REPORTE CIUDADANO -->
+    <section id="formReporte" class="form-card" style="display:none;">
+      <h2>Nuevo reporte ciudadano</h2>
+      <p class="form-help">
+        1) Tocá primero el mapa para marcar el lugar del problema.<br>
+        2) Elegí el tipo de problema.<br>
+        3) Tomá al menos una foto.
+      </p>
+
+      <div class="cat-grid">
+        <button class="cat-btn" data-cat="bache">Bache 🚧</button>
+        <button class="cat-btn" data-cat="arbol_caido">Árbol caído 🌳</button>
+        <button class="cat-btn" data-cat="basura">Basural 🗑️</button>
+        <button class="cat-btn" data-cat="cano_roto">Caño roto 🚰</button>
+      </div>
+
+      <input type="text" id="nombre" placeholder="Nombre y apellido *" />
+      <input type="tel" id="celular" placeholder="Celular 098x... *" />
+      <input type="text" id="barrio" placeholder="Barrio *" />
+
+      <textarea id="detalle" rows="3"
+        placeholder="Descripción detallada del problema (opcional)"></textarea>
+          
+
+
+      <div class="form-actions-centered">
+        <button id="takePhoto" class="primary-btn">Tomar foto</button>
+      </div>
+
+      <video id="camera" autoplay playsinline style="display:none;"></video>
+      <canvas id="canvas" style="display:none;"></canvas>
+
+      <div id="fotosContainer" class="fotos-preview"></div>
+      <p class="small">Máx. 5 fotos – tamaño total sugerido: 5 MB.</p>
+
+      <div id="resumenReporte" class="summary" style="display:none;"></div>
+
+      <div class="form-actions-centered">
+        <button id="sendReporte" class="primary-btn" style="display:none;">
+          Enviar reporte
+        </button>
+        <button id="cancelReporte" class="secondary-btn">
+          Cancelar
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL VISOR DE FOTOS (reporte / acción) -->
+  <div id="fotoModal" class="foto-modal" style="display:none;">
+    <div class="foto-modal-backdrop"></div>
+    <div class="foto-modal-content">
+      <button id="fotoModalClose" class="foto-modal-close" type="button">×</button>
+      <button id="fotoModalPrev" class="foto-modal-nav foto-modal-prev" type="button">‹</button>
+      <img id="fotoModalImg" alt="Foto del reporte" />
+      <button id="fotoModalNext" class="foto-modal-nav foto-modal-next" type="button">›</button>
+    </div>
+  </div>
+
+  <!-- MODAL GENÉRICO PARA LA HOME -->
+  <div id="modalAsu" class="asu-modal">
+    <div class="asu-modal-content" id="modalAsuContent">
+      <!-- contenido dinámico desde home.js -->
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="main-footer">
+    <h3>¿Cómo usar AsuAlerta?</h3>
+    <p>
+      1) Tocá el mapa para marcar la ubicación del problema.<br>
+      2) Elegí la categoría correspondiente.<br>
+      3) Tomá al menos una foto como evidencia.<br>
+      4) Completá tus datos y enviá el reporte.
+    </p>
+    <br>
+    <p class="copyright"><strong>
+      © Alertas 2025 – Todos los derechos reservados.
+    </strong></p>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="ui.js"></script>
+  <script type="module" src="clima.js"></script>
+  <script type="module" src="home.js"></script>
+</body>
+</html>

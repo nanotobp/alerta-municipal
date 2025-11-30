@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0" />
+  <title>AsuAlerta – Estadísticas</title>
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+
+  <!-- Tabler CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css" rel="stylesheet"/>
+
+  <!-- Weather Icons -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    .kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+      gap:10px;
+      margin:12px;
+    }
+    .kpi-card{
+      background:var(--bg-card);
+      border-radius:12px;
+      padding:12px;
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      text-align:center;
+    }
+    .kpi-value{
+      font-size:1.6rem;
+      font-weight:800;
+      color:var(--accent);
+    }
+    .filtros-tiempo{
+      display:flex;
+      gap:8px;
+      padding:10px 14px;
+    }
+    .filtro-tiempo{
+      padding:6px 12px;
+      font-size:.82rem;
+      border-radius:999px;
+      background:var(--chip-bg);
+      border:1px solid var(--chip-border);
+      color:var(--text);
+      cursor:pointer;
+    }
+    .filtro-tiempo.active{
+      background:var(--accent);
+      color:#fff;
+    }
+    .select-depto-wrapper{
+      padding:0 14px 10px 14px;
+    }
+    #selectDepto{
+      width:100%;
+      padding:8px 10px;
+      border-radius:12px;
+      background:var(--bg-card);
+      border:1px solid var(--border);
+      color:var(--text);
+      font-size:.88rem;
+    }
+    .chart-card{
+      background:var(--bg-card);
+      margin:10px 14px;
+      padding:14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER UNIFICADO -->
+<header id="header">
+  <div class="header-left">
+    <div class="header-logo-row">
+      <img src="https://codigocenter.com/logo/muni.png"
+           alt="Municipalidad de Asunción"
+           class="muni-logo" />
+    </div>
+    <div class="header-meta-row">
+      <span id="fechaHeader" class="fecha"></span>
+      <div class="weather-box">
+        <i id="weatherIcon" class="wi wi-day-sunny weather-icon-anim"></i>
+        <span id="weatherTemp">--°C</span>
+      </div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button id="themeToggle" class="circle-btn">◐</button>
+    <button id="menuBtn" class="circle-btn">☰</button>
+  </div>
+</header>
+
+<!-- SIDE MENU -->
+<aside id="sideMenu">
+  <button id="closeMenu" class="close-btn">×</button>
+  <h2 class="menu-title">AsuAlerta</h2>
+  <p class="menu-sub">Estadísticas públicas</p>
+  <nav class="menu-nav">
+    <a href="index.html">🗺️ Mapa ciudadano</a>
+    <a href="ciudad.html">📘 Reportes / Acciones</a>
+    <a href="estadisticas.html">📊 Estadísticas</a>
+  </nav>
+</aside>
+
+<!-- MAIN -->
+<main style="padding-bottom:20px;">
+
+  <!-- FILTROS -->
+  <div class="filtros-tiempo">
+    <button class="filtro-tiempo active" data-dias="7">7 días</button>
+    <button class="filtro-tiempo" data-dias="30">30 días</button>
+    <button class="filtro-tiempo" data-dias="90">90 días</button>
+    <button class="filtro-tiempo" data-dias="365">12 meses</button>
+  </div>
+
+  <div class="select-depto-wrapper">
+    <select id="selectDepto">
+      <option value="todos">📍 Todos los departamentos</option>
+    </select>
+  </div>
+
+  <!-- KPIs -->
+  <section class="kpi-grid">
+    <div class="kpi-card">
+      <div>Reportes</div>
+      <div id="kpiReportes" class="kpi-value">--</div>
+    </div>
+    <div class="kpi-card">
+      <div>Acciones</div>
+      <div id="kpiAcciones" class="kpi-value">--</div>
+    </div>
+    <div class="kpi-card">
+      <div>% Solucionados</div>
+      <div id="kpiSolucion" class="kpi-value">--</div>
+    </div>
+    <div class="kpi-card">
+      <div>Tiempo promedio</div>
+      <div id="kpiTiempo" class="kpi-value">--</div>
+    </div>
+  </section>
+
+  <!-- CHARTS -->
+  <div class="chart-card">
+    <h3 style="margin-bottom:10px;">Reportes por categoría</h3>
+    <canvas id="chartReportes"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <h3 style="margin-bottom:10px;">Acciones por categoría</h3>
+    <canvas id="chartAcciones"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <h3 style="margin-bottom:10px;">Reportes vs Acciones (línea)</h3>
+    <canvas id="chartLinea"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <h3 style="margin-bottom:10px;">Top departamentos</h3>
+    <canvas id="chartDeptos"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <h3 style="margin-bottom:10px;">Mapa de densidad (reportes + acciones)</h3>
+    <div id="mapHeat"
+         style="height:320px;border-radius:14px;border:2px solid var(--accent);overflow:hidden;"></div>
+  </div>
+
+</main>
+
+<footer class="main-footer">
+  <p>🌐 Estadísticas públicas de AsuAlerta</p>
+</footer>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="ui.js"></script>
+<script type="module" src="clima.js"></script>
+<script type="module" src="estadisticas.js"></script>
+
+</body>
+</html>

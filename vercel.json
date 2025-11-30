@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    { "source": "/login.html", "destination": "/admin/login.html" },
+    { "source": "/panel-operador.html", "destination": "/admin/panel-operador.html" },
+    { "source": "/panel-intendente.html", "destination": "/admin/panel-intendente.html" },
+    { "source": "/panel-superadmin.html", "destination": "/admin/panel-superadmin.html" }
+  ]
+}

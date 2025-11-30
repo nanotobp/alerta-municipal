@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <title>AsuAlerta – Panel Superadmin Pro Console</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tabler CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-flags.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-payments.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-vendors.min.css"
+    rel="stylesheet"
+  />
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+
+  <!-- Leaflet + MarkerCluster + HeatLayer -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
+  <style>
+    .stat-label {
+      font-size:0.8rem;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      color:rgba(0,0,0,.6);
+    }
+    [data-bs-theme="dark"] .stat-label {
+      color:rgba(255,255,255,.6);
+    }
+    .stat-number {
+      font-size:1.7rem;
+      font-weight:600;
+    }
+    .stat-caption {
+      font-size:0.8rem;
+      color:rgba(0,0,0,.55);
+    }
+    [data-bs-theme="dark"] .stat-caption {
+      color:rgba(255,255,255,.55);
+    }
+    .badge-pill { border-radius:999px; }
+
+    .category-dot {
+      display:inline-block;
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      margin-right:6px;
+    }
+
+    .mini-bar-row {
+      display:flex;
+      align-items:center;
+      margin-bottom:4px;
+      font-size:0.8rem;
+    }
+    .mini-bar-label {
+      width:80px;
+      flex-shrink:0;
+    }
+    .mini-bar-bar {
+      flex:1;
+      height:6px;
+      border-radius:4px;
+      background:rgba(0,0,0,0.06);
+      overflow:hidden;
+      margin:0 6px;
+    }
+    .mini-bar-fill {
+      height:100%;
+      border-radius:4px;
+      background:var(--tblr-primary,#206bc4);
+    }
+    .mini-bar-value {
+      width:50px;
+      text-align:right;
+      flex-shrink:0;
+    }
+
+    #map30, #mapGlobal, #mapHeat {
+      width:100%;
+      height:380px;
+      border-radius:8px;
+      border:1px solid rgba(0,0,0,0.1);
+    }
+    #miniMapaDetalle {
+      width:100%;
+      height:200px;
+      border-radius:8px;
+      border:1px solid rgba(0,0,0,.1);
+      overflow:hidden;
+    }
+
+    .timeline {
+      border-left: 2px solid rgba(0,0,0,0.1);
+      padding-left: 16px;
+      margin-left: 4px;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 18px;
+    }
+    .timeline-point {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      position: absolute;
+      left: -7px;
+      top: 4px;
+      background: var(--tblr-blue, #206bc4);
+    }
+    .timeline-event {
+      padding-left: 4px;
+    }
+
+    .acciones-fotos img {
+      width:52px;
+      height:52px;
+      object-fit:cover;
+      border-radius:6px;
+      margin-right:4px;
+      margin-top:4px;
+      border:1px solid rgba(0,0,0,0.08);
+      cursor:pointer;
+    }
+
+    .table-logs {
+      font-size:0.8rem;
+    }
+    .table-logs td, .table-logs th {
+      padding-top:4px;
+      padding-bottom:4px;
+    }
+
+    .ping-dot {
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      display:inline-block;
+      margin-right:3px;
+    }
+
+    .heat-cell {
+      width:100%;
+      height:16px;
+      border-radius:4px;
+    }
+
+    .small-muted {
+      font-size:0.78rem;
+      color:rgba(0,0,0,0.55);
+    }
+    [data-bs-theme="dark"] .small-muted {
+      color:rgba(255,255,255,0.6);
+    }
+
+    .table-sticky-head thead.sticky-top {
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+    .foto-thumb {
+      width:40px;
+      height:40px;
+      object-fit:cover;
+      border-radius:4px;
+      margin-right:4px;
+      cursor:pointer;
+      border:1px solid rgba(0,0,0,0.06);
+    }
+  </style>
+
+  <!-- Google tag -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-L45KW3KDSZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-L45KW3KDSZ');
+  </script>
+</head>
+<body>
+  <div class="page">
+    <!-- NAVBAR -->
+    <header class="navbar navbar-expand-md navbar-light d-print-none">
+      <div class="container-xl">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+          <span class="navbar-brand-text">
+            🟣 AsuAlerta – Superadmin Pro Console
+          </span>
+        </h1>
+
+        <div class="navbar-nav flex-row order-md-last">
+          <button
+            class="nav-link px-3"
+            id="themeToggle"
+            type="button"
+            title="Cambiar tema"
+          >
+            🌙
+          </button>
+          <button
+            id="btnFullScreen"
+            class="nav-link px-3"
+            type="button"
+            title="Pantalla completa"
+          >
+            ⛶
+          </button>
+          <div class="nav-item dropdown">
+            <a class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" href="#">
+              <span class="avatar avatar-sm">SA</span>
+              <div class="d-none d-xl-block ps-2">
+                <div id="saEmailLabel">Superadmin</div>
+                <div class="mt-1 small text-muted" id="saDeptoLabel">Control total</div>
+              </div>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              <a href="/panel-operador.html" class="dropdown-item">🛠 Panel operador</a>
+              <a href="/panel-intendente.html" class="dropdown-item">🧭 Panel intendente</a>
+              <a href="/operador-movil.html" class="dropdown-item">📱 Modo móvil</a>
+              <a href="/index.html" class="dropdown-item">🗺️ Mapa ciudadano</a>
+              <a href="/ciudad.html?tab=acciones" class="dropdown-item">🏛️ Acciones visibles</a>
+              <div class="dropdown-divider"></div>
+              <a id="btnLogout" href="javascript:void(0)" class="dropdown-item">Cerrar sesión</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="collapse navbar-collapse" id="navbar-menu">
+          <div class="navbar-nav">
+            <a class="nav-link active" href="/panel-superadmin.html">
+              🟣 Panel superadmin
+            </a>
+            <a class="nav-link" href="/panel-intendente.html">
+              🧭 Panel intendente
+            </a>
+            <a class="nav-link" href="/panel-operador.html">
+              🛠 Panel operador
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENIDO -->
+    <div class="page-wrapper">
+      <div class="page-body">
+        <div class="container-xl">
+
+          <!-- HEADER -->
+          <div class="page-header d-print-none">
+            <div class="row align-items-center">
+              <div class="col">
+                <h2 class="page-title">
+                  🟣 Superadmin Pro Console
+                </h2>
+                <div class="text-muted mt-1">
+                  Tablero avanzado tipo Datadog + Grafana · Métricas de rendimiento · Estadísticas ultra · Mapas · Analytics
+                </div>
+              </div>
+              <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                  <button id="btnRefresh" class="btn btn-primary">
+                    🔄 Actualizar
+                  </button>
+                  <button id="btnExportAll" class="btn btn-outline-success">
+                    ⬇️ Exportar todo
+                  </button>
+                  <button data-bs-toggle="modal" data-bs-target="#modalHistorico" class="btn btn-outline-secondary">
+                    📊 Ver histórico
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPIs PRINCIPALES -->
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="d-flex align-items-center">
+                    <div class="subheader">Reportes totales</div>
+                  </div>
+                  <div class="h1 mb-1" id="kpi_total">-</div>
+                  <div class="text-muted small">
+                    <span class="text-success" id="kpi_sol">-</span> solucionados ·
+                    <span class="text-warning" id="kpi_pen">-</span> pendientes
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="subheader">Tiempo promedio</div>
+                  <div class="h1 mb-1" id="kpi_tiempo">-</div>
+                  <div class="text-muted small">Horas hasta resolución</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="subheader">Actividad hoy</div>
+                  <div class="h1 mb-1">
+                    <span id="kpi_rep_hoy">-</span> + <span id="kpi_acc_hoy">-</span>
+                  </div>
+                  <div class="text-muted small">Reportes + acciones</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="subheader">Operadores</div>
+                  <div class="h1 mb-1">
+                    <span id="kpi_oper_activos">-</span> / <span id="kpi_oper_total">-</span>
+                  </div>
+                  <div class="text-muted small">Activos hoy / Total</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DASHBOARD ESTADÍSTICO ULTRA -->
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-lg-6">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">📈 Curva últimos 7 días</h3>
+                </div>
+                <div class="card-body">
+                  <div id="curva7d"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">📊 Curva últimos 30 días</h3>
+                </div>
+                <div class="card-body">
+                  <div id="curva30d"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-lg-6">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">⏰ Histograma horario (0-23h)</h3>
+                </div>
+                <div class="card-body">
+                  <div id="histHoras"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">📅 Heatmap semanal (día × hora)</h3>
+                </div>
+                <div class="card-body">
+                  <div id="heatmapSemanal"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">🏷️ Top categorías</h3>
+                </div>
+                <div class="card-body">
+                  <div id="topCategorias"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">🏛️ Ranking departamentos</h3>
+                </div>
+                <div class="card-body">
+                  <div id="rankingDeptos"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">👷 Ranking operadores</h3>
+                </div>
+                <div class="card-body">
+                  <div id="rankingOperadores"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-lg-12">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">⚡ Acciones vs Reportes por hora (ratio)</h3>
+                </div>
+                <div class="card-body">
+                  <div id="accionesVsReportesHora"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MAPAS -->
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">🗺️ Mapa clustering global</h3>
+                </div>
+                <div class="card-body p-0">
+                  <div id="mapGlobal"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">📍 Mapa clustering 30 días</h3>
+                </div>
+                <div class="card-body p-0">
+                  <div id="map30"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">🔥 Heatmap densidad</h3>
+                </div>
+                <div class="card-body p-0">
+                  <div id="mapHeat"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RENDIMIENTO DEL SISTEMA -->
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-lg-12">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">⚙️ Métricas de rendimiento del sistema</h3>
+                  <div class="card-actions">
+                    <button class="btn btn-sm btn-primary" id="btnTestRendimiento">
+                      🚀 Test ahora
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-lg-3">
+                      <div class="mb-2">
+                        <div class="small-muted">Latencia Worker</div>
+                        <div class="h3 mb-0" id="metric_worker">-</div>
+                      </div>
+                    </div>
+                    <div class="col-lg-3">
+                      <div class="mb-2">
+                        <div class="small-muted">Latencia Supabase REST</div>
+                        <div class="h3 mb-0" id="metric_supabase">-</div>
+                      </div>
+                    </div>
+                    <div class="col-lg-3">
+                      <div class="mb-2">
+                        <div class="small-muted">Latencia Storage</div>
+                        <div class="h3 mb-0" id="metric_storage">-</div>
+                      </div>
+                    </div>
+                    <div class="col-lg-3">
+                      <div class="mb-2">
+                        <div class="small-muted">Estado Worker</div>
+                        <div class="h3 mb-0" id="metric_status">-</div>
+                      </div>
+                    </div>
+                  </div>
+                  <hr>
+                  <div class="row">
+                    <div class="col-12">
+                      <div class="small-muted mb-2">Timeline Ping (últimos 10 tests)</div>
+                      <div id="pingTimeline"></div>
+                    </div>
+                  </div>
+                  <hr>
+                  <div class="row">
+                    <div class="col-12">
+                      <div class="small-muted mb-2">Logs locales (últimos eventos)</div>
+                      <div style="max-height:180px; overflow-y:auto;">
+                        <table class="table table-sm table-logs">
+                          <thead>
+                            <tr>
+                              <th>Timestamp</th>
+                              <th>Evento</th>
+                              <th>Detalles</th>
+                            </tr>
+                          </thead>
+                          <tbody id="logsTable">
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLA GLOBAL REPORTES -->
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">📋 Tabla global de reportes (últimos 30 días)</h3>
+                  <div class="card-actions">
+                    <input
+                      type="search"
+                      class="form-control form-control-sm"
+                      placeholder="Buscar..."
+                      id="buscarReportes"
+                      style="width:200px;"
+                    />
+                  </div>
+                </div>
+                <div class="card-body p-0">
+                  <div style="max-height:400px; overflow-y:auto;">
+                    <table class="table table-sm table-hover table-sticky-head mb-0">
+                      <thead class="sticky-top">
+                        <tr>
+                          <th>ID</th>
+                          <th>Categoría</th>
+                          <th>Departamento</th>
+                          <th>Barrio</th>
+                          <th>Estado</th>
+                          <th>Creado</th>
+                          <th>Fotos</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tablaReportes">
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLA GLOBAL ACCIONES -->
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">🚀 Tabla global de acciones municipales (últimos 30 días)</h3>
+                  <div class="card-actions">
+                    <input
+                      type="search"
+                      class="form-control form-control-sm"
+                      placeholder="Buscar..."
+                      id="buscarAcciones"
+                      style="width:200px;"
+                    />
+                  </div>
+                </div>
+                <div class="card-body p-0">
+                  <div style="max-height:400px; overflow-y:auto;">
+                    <table class="table table-sm table-hover table-sticky-head mb-0">
+                      <thead class="sticky-top">
+                        <tr>
+                          <th>ID</th>
+                          <th>Categoría</th>
+                          <th>Título</th>
+                          <th>Operador</th>
+                          <th>Departamento</th>
+                          <th>Creado</th>
+                          <th>Fotos</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tablaAcciones">
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL HISTÓRICO -->
+  <div class="modal fade" id="modalHistorico" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">📊 Vista histórica completa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row mb-3">
+            <div class="col-4">
+              <div class="card">
+                <div class="card-body text-center">
+                  <div class="stat-label">Total histórico</div>
+                  <div class="stat-number" id="hist_total">-</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="card">
+                <div class="card-body text-center">
+                  <div class="stat-label">Solucionados</div>
+                  <div class="stat-number text-success" id="hist_sol">-</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="card">
+                <div class="card-body text-center">
+                  <div class="stat-label">Pendientes</div>
+                  <div class="stat-number text-warning" id="hist_pen">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <div class="stat-label">Rango de años</div>
+            <div class="stat-number" id="hist_anios">-</div>
+          </div>
+          <hr>
+          <div class="mb-3">
+            <h5>Reportes por año</h5>
+            <div id="hist_por_anio"></div>
+          </div>
+          <hr>
+          <div class="mb-3">
+            <h5>Histograma meses (últimos 12)</h5>
+            <div id="hist_meses"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OFFCANVAS DETALLE PREMIUM -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="detallePanel" style="width:600px;">
+    <div class="offcanvas-header">
+      <div>
+        <h5 class="offcanvas-title" id="detalleTitulo">Reporte #0</h5>
+        <div class="text-muted small" id="detalleSub">...</div>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="mb-3">
+        <div class="d-flex gap-2 flex-wrap">
+          <span class="badge badge-pill" id="detalleCatChip">-</span>
+          <span class="badge bg-secondary badge-pill" id="detalleDeptoChip">-</span>
+          <span class="badge bg-warning badge-pill" id="detalleBadge">-</span>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="small text-muted mb-1">Ciudadano</div>
+        <div><b id="detalleCiudadanoNombre">-</b></div>
+        <div class="small" id="detalleCiudadanoCelular">-</div>
+      </div>
+
+      <div class="mb-3">
+        <div class="small text-muted mb-1">Descripción del reporte</div>
+        <div id="detalleTextoReporte">-</div>
+      </div>
+
+      <div class="mb-3">
+        <div class="small text-muted mb-1">Fechas</div>
+        <div class="small" id="detalleFechas">-</div>
+      </div>
+
+      <div class="mb-3">
+        <div class="small text-muted mb-1">Fotos del ciudadano</div>
+        <div id="detalleFotosCiudadano"></div>
+      </div>
+
+      <hr>
+
+      <div class="mb-3">
+        <div class="small text-muted mb-2">Mini Dashboard Stats</div>
+        <div class="row row-cards">
+          <div class="col-6">
+            <div class="card card-sm">
+              <div class="card-body p-2 text-center">
+                <div class="small-muted">Distancia zona</div>
+                <div class="h4 mb-0" id="miniStat_distancia">-</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card card-sm">
+              <div class="card-body p-2 text-center">
+                <div class="small-muted">Tiempo atención</div>
+                <div class="h4 mb-0" id="miniStat_tiempo">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="small text-muted mb-1">Mini mapa</div>
+        <div id="miniMapaDetalle"></div>
+      </div>
+
+      <div class="mb-3">
+        <button class="btn btn-sm btn-outline-primary w-100" id="btnAbrirEnMapa">
+          🗺️ Abrir en mapa principal
+        </button>
+      </div>
+
+      <hr>
+
+      <div class="mb-3">
+        <div class="small text-muted mb-2">Duplicados detectados</div>
+        <div id="duplicadosLista" class="small"></div>
+      </div>
+
+      <hr>
+
+      <div class="mb-3">
+        <h6>Timeline de acciones municipales</h6>
+        <div id="accionesListado"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/js/tabler.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+  <script>
+    // ============================
+    // CONFIGURACIÓN
+    // ============================
+    const WORKER_URL = "https://cold-base-33cf.nanotobp.workers.dev";
+    const token = localStorage.getItem("asu_jwt");
+    const rol = localStorage.getItem("asu_rol");
+
+
+    document.addEventListener("DOMContentLoaded", () => {
+
+    // leer sesión CORRECTA
+    const token = localStorage.getItem("asu_jwt");
+    const rol = localStorage.getItem("asu_rol");
+
+    // Validación de rol
+    if (!token || rol !== "superadmin") {
+        document.body.innerHTML = "<h2 style='padding:20px;text-align:center;color:red;'>Acceso denegado. Solo superadmin.</h2>";
+        window.location.href = "/admin/login.html";
+        return;
+    }
+
+});
+
+
+
+    const catColors = {
+      baches: "#d32f2f",
+      arbol_caido: "#388e3c",
+      cano_roto: "#1976d2",
+      basural: "#f57c00"
+    };
+
+    const catLabels = {
+      baches: "BACHES",
+      arbol_caido: "ÁRBOL CAÍDO",
+      cano_roto: "CAÑO ROTO",
+      basural: "BASURAL"
+    };
+
+    function labelCategoria(slug) {
+      return catLabels[slug] || slug.toUpperCase();
+    }
+
+    // ============================
+    // DATOS GLOBALES
+    // ============================
+    let reportesAll = [];
+    let reportes30 = [];
+    let accionesAll = [];
+    let acciones30 = [];
+    let departamentos = [];
+    let usuarios = [];
+    let workerStats = null;
+    let deptosMap = {};
+
+    let reporteDetalleActual = null;
+    let miniMapaInstance = null;
+
+    // Logs locales
+    let systemLogs = [];
+    function addLog(evento, detalles) {
+      const timestamp = new Date().toLocaleTimeString("es-PY");
+      systemLogs.unshift({ timestamp, evento, detalles });
+      if (systemLogs.length > 20) systemLogs.pop();
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const tbody = document.getElementById("logsTable");
+      tbody.innerHTML = systemLogs.map(l => `
+        <tr>
+          <td>${l.timestamp}</td>
+          <td>${l.evento}</td>
+          <td class="small text-muted">${l.detalles}</td>
+        </tr>
+      `).join("");
+    }
+
+    // Ping timeline
+    let pingHistory = [];
+    function addPing(latency, status) {
+      pingHistory.unshift({ latency, status, timestamp: new Date().toLocaleTimeString("es-PY") });
+      if (pingHistory.length > 10) pingHistory.pop();
+      renderPingTimeline();
+    }
+
+    function renderPingTimeline() {
+      const cont = document.getElementById("pingTimeline");
+      if (!pingHistory.length) {
+        cont.innerHTML = '<span class="text-muted small">Sin datos aún.</span>';
+        return;
+      }
+      cont.innerHTML = pingHistory.map(p => {
+        const color = p.status === "ok" ? "#10b981" : "#ef4444";
+        return `
+          <span class="ping-dot" style="background:${color};" title="${p.timestamp}: ${p.latency}ms"></span>
+        `;
+      }).join("");
+    }
+
+    // ============================
+    // LOGOUT
+    // ============================
+    document.getElementById("btnLogout").onclick = () => {
+      localStorage.clear();
+      window.location.href = "/login.html";
+    };
+
+    // ============================
+    // THEME TOGGLE
+    // ============================
+    const themeToggle = document.getElementById("themeToggle");
+    const html = document.documentElement;
+    let currentTheme = html.getAttribute("data-bs-theme") || "light";
+
+    themeToggle.onclick = () => {
+      currentTheme = currentTheme === "light" ? "dark" : "light";
+      html.setAttribute("data-bs-theme", currentTheme);
+      themeToggle.textContent = currentTheme === "light" ? "🌙" : "☀️";
+    };
+
+    // ============================
+    // FULL SCREEN
+    // ============================
+    document.getElementById("btnFullScreen").onclick = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    // ============================
+    // CARGAR DATOS
+    // ============================
+    async function cargarDepartamentos() {
+      try {
+        const res = await fetch("https://oqkxvfglzhozejljwedc.supabase.co/rest/v1/departamentos?select=*", {
+          headers: {
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xa3h2ZmdsenhvemVqbGp3ZWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUzMDU1NDksImV4cCI6MjA1MDg4MTU0OX0.lHAE5NLlPQRNfPD3Zw8VF0eVAQMV4aw87yZEY8QRZHI"
+          }
+        });
+        departamentos = await res.json();
+        departamentos.forEach(d => deptosMap[d.id] = d.nombre);
+      } catch (e) {
+        console.error("Error al cargar departamentos:", e);
+      }
+    }
+
+    async function cargarUsuarios() {
+      try {
+        const res = await fetch("https://oqkxvfglzhozejljwedc.supabase.co/rest/v1/usuarios_municipales?select=*", {
+          headers: {
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xa3h2ZmdsenhvemVqbGp3ZWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUzMDU1NDksImV4cCI6MjA1MDg4MTU0OX0.lHAE5NLlPQRNfPD3Zw8VF0eVAQMV4aw87yZEY8QRZHI"
+          }
+        });
+        usuarios = await res.json();
+      } catch (e) {
+        console.error("Error al cargar usuarios:", e);
+      }
+    }
+
+    async function cargarEstadisticasGlobales() {
+      addLog("Fetch", "Cargando estadísticas globales...");
+      try {
+        const start = performance.now();
+        const res = await fetch(WORKER_URL + "/estadisticasGlobalesSuperadmin", {
+          headers: { Authorization: "Bearer " + token }
+        });
+        const latency = Math.round(performance.now() - start);
+        addLog("Fetch", `Estadísticas globales: ${latency}ms`);
+
+        if (!res.ok) throw new Error("Error al cargar estadísticas");
+        workerStats = await res.json();
+        renderKPIs();
+        renderCurva7d();
+        renderCurva30d();
+        renderHistHoras();
+        renderTopCategorias();
+        renderRankingDeptos();
+        renderRankingOperadores();
+        renderAccionesVsReportesHora();
+        renderHeatmapSemanal();
+      } catch (e) {
+        console.error(e);
+        addLog("Error", "No se pudo cargar estadísticas globales");
+      }
+    }
+
+    async function cargarReportes() {
+      addLog("Fetch", "Cargando reportes...");
+      try {
+        const start = performance.now();
+        const res = await fetch(WORKER_URL + "/listarReportes", {
+          headers: { Authorization: "Bearer " + token }
+        });
+        const latency = Math.round(performance.now() - start);
+        addLog("Fetch", `Reportes: ${latency}ms`);
+
+        const json = await res.json();
+        reportesAll = json.data || [];
+
+        const hoy = startOfDay(new Date());
+        const hace30 = new Date(hoy);
+        hace30.setDate(hace30.getDate() - 30);
+
+        reportes30 = reportesAll.filter(r => {
+          if (!r.created_at) return false;
+          const d = startOfDay(new Date(r.created_at));
+          return d >= hace30;
+        });
+
+        renderTablaReportes();
+        renderHistoricoModal();
+      } catch (e) {
+        console.error(e);
+        addLog("Error", "No se pudo cargar reportes");
+      }
+    }
+
+    async function cargarAcciones() {
+      addLog("Fetch", "Cargando acciones municipales...");
+      try {
+        const start = performance.now();
+        const res = await fetch("https://oqkxvfglzhozejljwedc.supabase.co/rest/v1/acciones_municipales?select=*", {
+          headers: {
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xa3h2ZmdsenhvemVqbGp3ZWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUzMDU1NDksImV4cCI6MjA1MDg4MTU0OX0.lHAE5NLlPQRNfPD3Zw8VF0eVAQMV4aw87yZEY8QRZHI"
+          }
+        });
+        const latency = Math.round(performance.now() - start);
+        addLog("Fetch", `Acciones: ${latency}ms`);
+
+        accionesAll = await res.json();
+
+        const hoy = startOfDay(new Date());
+        const hace30 = new Date(hoy);
+        hace30.setDate(hace30.getDate() - 30);
+
+        acciones30 = accionesAll.filter(a => {
+          if (!a.created_at) return false;
+          const d = startOfDay(new Date(a.created_at));
+          return d >= hace30;
+        });
+
+        renderTablaAcciones();
+      } catch (e) {
+        console.error(e);
+        addLog("Error", "No se pudo cargar acciones");
+      }
+    }
+
+    function startOfDay(d) {
+      const n = new Date(d);
+      n.setHours(0, 0, 0, 0);
+      return n;
+    }
+
+    // ============================
+    // RENDER KPIS
+    // ============================
+    function renderKPIs() {
+      if (!workerStats) return;
+
+      const t = workerStats.totales || {};
+      const h = workerStats.hoy || {};
+
+      document.getElementById("kpi_total").textContent = t.total ?? 0;
+      document.getElementById("kpi_sol").textContent = t.solucionados ?? 0;
+      document.getElementById("kpi_pen").textContent = t.pendientes ?? 0;
+      document.getElementById("kpi_tiempo").textContent =
+        t.tiempoPromedio != null ? t.tiempoPromedio.toFixed(1) + " h" : "-";
+
+      document.getElementById("kpi_rep_hoy").textContent = h.reportesHoy ?? 0;
+      document.getElementById("kpi_acc_hoy").textContent = h.accionesHoy ?? 0;
+
+      const ops = usuarios.filter(u => u.rol === "operador");
+      document.getElementById("kpi_oper_total").textContent = ops.length;
+      const hoy = startOfDay(new Date());
+      const activosSet = new Set(
+        accionesAll
+          .filter(a => startOfDay(new Date(a.created_at)).getTime() === hoy.getTime())
+          .map(a => a.creado_por_id)
+      );
+      document.getElementById("kpi_oper_activos").textContent = activosSet.size;
+
+      // histórico modal (full)
+      document.getElementById("hist_total").textContent = reportesAll.length;
+      const fullSol = reportesAll.filter(r=>r.estado==="solucionado").length;
+      const fullPen = reportesAll.length - fullSol;
+      document.getElementById("hist_sol").textContent = fullSol;
+      document.getElementById("hist_pen").textContent = fullPen;
+
+      if (reportesAll.length) {
+        const years = reportesAll
+          .filter(r=>r.created_at)
+          .map(r=>new Date(r.created_at).getFullYear());
+        const minY = Math.min(...years);
+        const maxY = Math.max(...years);
+        document.getElementById("hist_anios").textContent =
+          minY === maxY ? minY : (minY + " – " + maxY);
+      } else {
+        document.getElementById("hist_anios").textContent = "-";
+      }
+    }
+
+    // ============================
+    // MINI BAR HELPER
+    // ============================
+    function miniSerieBars(containerId, series, valueKey, labelKey) {
+      const cont = document.getElementById(containerId);
+      if (!cont) return;
+      if (!series.length) {
+        cont.innerHTML = '<span class="text-muted small">Sin datos suficientes.</span>';
+        return;
+      }
+      const max = Math.max(...series.map(s=>s[valueKey]||0)) || 1;
+      cont.innerHTML = series.map(s => {
+        const v = s[valueKey] || 0;
+        const pct = Math.max(3, (v / max) * 100);
+        return `
+          <div class="mini-bar-row">
+            <div class="mini-bar-label">${s[labelKey]}</div>
+            <div class="mini-bar-bar">
+              <div class="mini-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="mini-bar-value">${v}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ============================
+    // CURVA 7 DÍAS
+    // ============================
+    function renderCurva7d() {
+      if (!workerStats || !workerStats.curva7dias) return;
+      const serie = workerStats.curva7dias.map(d => ({
+        fecha: d.fecha.slice(5),
+        total: (d.reportes || 0) + (d.acciones || 0)
+      }));
+      miniSerieBars("curva7d", serie, "total", "fecha");
+    }
+
+    // ============================
+    // CURVA 30 DÍAS
+    // ============================
+    function renderCurva30d() {
+      if (!reportesAll.length && !accionesAll.length) {
+        miniSerieBars("curva30d", [], "total", "fecha");
+        return;
+      }
+      const hoy = startOfDay(new Date());
+      const map = {};
+      for (let i=29;i>=0;i--) {
+        const d = new Date(hoy);
+        d.setDate(d.getDate()-i);
+        const key = d.toISOString().slice(0,10);
+        map[key] = { fecha:key.slice(5), reportes:0, acciones:0 };
+      }
+      reportesAll.forEach(r => {
+        const f = r.created_at?.slice(0,10);
+        if (map[f]) map[f].reportes++;
+      });
+      accionesAll.forEach(a => {
+        const f = a.created_at?.slice(0,10);
+        if (map[f]) map[f].acciones++;
+      });
+      const serie = Object.values(map).map(d => ({
+        fecha:d.fecha,
+        total:d.reportes + d.acciones
+      }));
+      miniSerieBars("curva30d", serie, "total", "fecha");
+    }
+
+    // ============================
+    // HISTOGRAMA HORAS
+    // ============================
+    function renderHistHoras() {
+      const cont = document.getElementById("histHoras");
+      if (!reportes30.length) {
+        cont.innerHTML = '<span class="text-muted small">Sin reportes en los últimos 30 días.</span>';
+        return;
+      }
+      const buckets = new Array(24).fill(0);
+      reportes30.forEach(r => {
+        if (!r.created_at) return;
+        const h = new Date(r.created_at).getHours();
+        buckets[h] = (buckets[h]||0)+1;
+      });
+      const serie = buckets.map((v,h)=>({ hora:h, valor:v }));
+      const max = Math.max(...serie.map(s=>s.valor)) || 1;
+      cont.innerHTML = serie.map(s => {
+        const pct = s.valor ? Math.max(4,(s.valor/max)*100) : 0;
+        return `
+          <div class="mini-bar-row">
+            <div class="mini-bar-label">${s.hora.toString().padStart(2,"0")}h</div>
+            <div class="mini-bar-bar">
+              <div class="mini-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="mini-bar-value">${s.valor}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ============================
+    // TOP CATEGORÍAS
+    // ============================
+    function renderTopCategorias() {
+      const cont = document.getElementById("topCategorias");
+      if (!workerStats || !workerStats.categorias || !workerStats.categorias.length) {
+        cont.innerHTML = '<span class="text-muted small">Sin datos.</span>';
+        return;
+      }
+      const serie = workerStats.categorias.map(c => ({
+        label: labelCategoria(c.categoria),
+        valor: c.cantidad
+      }));
+      const max = Math.max(...serie.map(s=>s.valor)) || 1;
+      cont.innerHTML = serie.map(s => {
+        const pct = Math.max(5,(s.valor/max)*100);
+        return `
+          <div class="mini-bar-row">
+            <div class="mini-bar-label">
+              <span class="category-dot" style="background:${catColors[s.label.toLowerCase()]||'#999'}"></span>
+              ${s.label}
+            </div>
+            <div class="mini-bar-bar">
+              <div class="mini-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="mini-bar-value">${s.valor}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ============================
+    // RANKING DEPTOS
+    // ============================
+    function renderRankingDeptos() {
+      const cont = document.getElementById("rankingDeptos");
+      if (!workerStats || !workerStats.rankingDeptos || !workerStats.rankingDeptos.length) {
+        cont.innerHTML = '<span class="text-muted small">Sin datos.</span>';
+        return;
+      }
+      const serie = workerStats.rankingDeptos;
+      const max = Math.max(...serie.map(s=>s.totalReportes||0)) || 1;
+      cont.innerHTML = serie.map(d => {
+        const pct = Math.max(5,(d.totalReportes/max)*100);
+        return `
+          <div class="mini-bar-row">
+            <div class="mini-bar-label">${d.nombre}</div>
+            <div class="mini-bar-bar">
+              <div class="mini-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="mini-bar-value" title="Resueltos / total">
+              ${d.solucionados}/${d.totalReportes}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ============================
+    // RANKING OPERADORES
+    // ============================
+    function renderRankingOperadores() {
+      const cont = document.getElementById("rankingOperadores");
+      if (!workerStats || !workerStats.rankingOperadores || !workerStats.rankingOperadores.length) {
+        cont.innerHTML = '<span class="text-muted small">Sin datos.</span>';
+        return;
+      }
+      const serie = workerStats.rankingOperadores.slice(0,8);
+      const max = Math.max(...serie.map(s=>s.accionesTotales||0)) || 1;
+      cont.innerHTML = serie.map(o => {
+        const pct = Math.max(5,(o.accionesTotales/max)*100);
+        const label = o.identificador || o.nombre || o.email;
+        return `
+          <div class="mini-bar-row">
+            <div class="mini-bar-label">${label}</div>
+            <div class="mini-bar-bar">
+              <div class="mini-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="mini-bar-value" title="Acciones totales / reportes resueltos">
+              ${o.accionesTotales}/${o.reportesResueltos}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ============================
+    // ACCIONES VS REPORTES HORA
+    // ============================
+    function renderAccionesVsReportesHora() {
+      const cont = document.getElementById("accionesVsReportesHora");
+      if (!reportes30.length && !acciones30.length) {
+        cont.innerHTML = '<span class="text-muted small">Sin datos en 30 días.</span>';
+        return;
+      }
+      const repH = new Array(24).fill(0);
+      const accH = new Array(24).fill(0);
+      reportes30.forEach(r=>{
+        if (!r.created_at) return;
+        const h = new Date(r.created_at).getHours();
+        repH[h]++;
+      });
+      acciones30.forEach(a=>{
+        if (!a.created_at) return;
+        const h = new Date(a.created_at).getHours();
+        accH[h]++;
+      });
+      const serie = [];
+      for (let h=0;h<24;h++){
+        serie.push({
+          hora:h,
+          reportes:repH[h],
+          acciones:accH[h],
+          ratio: repH[h] ? (accH[h]/repH[h]) : 0
+        });
+      }
+      const maxR = Math.max(...serie.map(s=>s.ratio)) || 1;
+      cont.innerHTML = serie.map(s=>{
+        const pct = s.ratio ? Math.max(4,(s.ratio/maxR)*100) : 0;
+        return `
+          <div class="mini-bar-row">
+            <div class="mini-bar-label">${s.hora.toString().padStart(2,"0")}h</div>
+            <div class="mini-bar-bar">
+              <div class="mini-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="mini-bar-value">${s.ratio ? s.ratio.toFixed(1) : "-"}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ============================
+    // HEATMAP SEMANAL
+    // ============================
+    function renderHeatmapSemanal() {
+      const cont = document.getElementById("heatmapSemanal");
+      if (!reportes30.length) {
+        cont.innerHTML = '<span class="text-muted small">Sin reportes en los últimos 30 días.</span>';
+        return;
+      }
+      const dias = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+      const matrix = Array(7).fill(0).map(()=>Array(24).fill(0));
+
+      reportes30.forEach(r=>{
+        if (!r.created_at) return;
+        const d = new Date(r.created_at);
+        const dow = d.getDay();
+        const h = d.getHours();
+        matrix[dow][h]++;
+      });
+
+      let max = 0;
+      matrix.forEach(row=>row.forEach(v=>{ if(v>max) max=v; }));
+
+      let html = '<div style="display:flex; flex-direction:column; gap:2px;">';
+      for (let dow=0;dow<7;dow++){
+        html += `<div style="display:flex; gap:2px; align-items:center;">`;
+        html += `<div style="width:40px; font-size:0.7rem; text-align:right;">${dias[dow]}</div>`;
+        for (let h=0;h<24;h++){
+          const v = matrix[dow][h];
+          const intensity = max ? v/max : 0;
+          const color = `rgba(32, 107, 196, ${intensity})`;
+          html += `<div class="heat-cell" style="background:${color};" title="${dias[dow]} ${h}h: ${v}"></div>`;
+        }
+        html += `</div>`;
+      }
+      html += '</div>';
+
+      cont.innerHTML = html;
+    }
+
+    // ============================
+    // HISTÓRICO MODAL
+    // ============================
+    function renderHistoricoModal() {
+      // por año
+      const contA = document.getElementById("hist_por_anio");
+      if (!reportesAll.length) {
+        contA.innerHTML = '<span class="text-muted small">Sin reportes históricos.</span>';
+      } else {
+        const mapA = {};
+        reportesAll.forEach(r=>{
+          if (!r.created_at) return;
+          const y = new Date(r.created_at).getFullYear();
+          if (!mapA[y]) mapA[y] = 0;
+          mapA[y]++;
+        });
+        const serie = Object.entries(mapA)
+          .map(([y,c])=>({ anio:y, cantidad:c }))
+          .sort((a,b)=>parseInt(a.anio)-parseInt(b.anio));
+        miniSerieBars("hist_por_anio", serie, "cantidad", "anio");
+      }
+
+      // últimos 12 meses
+      const contM = document.getElementById("hist_meses");
+      if (!reportesAll.length) {
+        contM.innerHTML = '<span class="text-muted small">Sin reportes históricos.</span>';
+      } else {
+        const hoy = new Date();
+        const meses = [];
+        for (let i=11;i>=0;i--){
+          const d = new Date(hoy);
+          d.setMonth(d.getMonth()-i);
+          const key = d.toISOString().slice(0,7);
+          meses.push({ mes:key, cantidad:0 });
+        }
+        reportesAll.forEach(r=>{
+          if (!r.created_at) return;
+          const key = r.created_at.slice(0,7);
+          const found = meses.find(m=>m.mes===key);
+          if (found) found.cantidad++;
+        });
+        const serie = meses.map(m=>({ mes:m.mes.slice(5), cantidad:m.cantidad }));
+        miniSerieBars("hist_meses", serie, "cantidad", "mes");
+      }
+    }
+
+    // ============================
+    // TABLAS
+    // ============================
+    function renderTablaReportes() {
+      const tbody = document.getElementById("tablaReportes");
+      if (!reportes30.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Sin reportes en los últimos 30 días.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = reportes30.map(r => {
+        const catLabel = labelCategoria(r.categoria);
+        const deptoNombre = r.departamento_id && deptosMap[r.departamento_id] ? deptosMap[r.departamento_id] : "Sin asignar";
+        const barrio = r.barrio || "Sin barrio";
+        const estado = r.estado === "solucionado"
+          ? '<span class="badge bg-success">Solucionado</span>'
+          : '<span class="badge bg-warning">Pendiente</span>';
+        const fecha = r.created_at ? new Date(r.created_at).toLocaleString("es-PY", {
+          day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"
+        }) : "-";
+
+        const fotos = Array.isArray(r.fotos_url) ? r.fotos_url : [];
+        const fotosHtml = fotos.length
+          ? fotos.slice(0,2).map(u=>`<img src="${u}" class="foto-thumb" onclick="window.open('${u}','_blank')" />`).join("")
+          : '<span class="text-muted small">Sin fotos</span>';
+
+        return `
+          <tr onclick="abrirDetalle(${r.id})" style="cursor:pointer;">
+            <td>${r.id}</td>
+            <td>
+              <span class="category-dot" style="background:${catColors[r.categoria]||'#999'}"></span>
+              ${catLabel}
+            </td>
+            <td>${deptoNombre}</td>
+            <td>${barrio}</td>
+            <td>${estado}</td>
+            <td class="small">${fecha}</td>
+            <td>${fotosHtml}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); abrirDetalle(${r.id})">
+                Ver
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderTablaAcciones() {
+      const tbody = document.getElementById("tablaAcciones");
+      if (!acciones30.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Sin acciones en los últimos 30 días.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = acciones30.map(a => {
+        const catLabel = a.categoria ? labelCategoria(a.categoria) : "Acción";
+        const deptoNombre = a.departamento_id && deptosMap[a.departamento_id] ? deptosMap[a.departamento_id] : "Sin asignar";
+        const titulo = a.titulo || "-";
+        const operador = a.creado_por_nombre || "N/D";
+        const fecha = a.created_at ? new Date(a.created_at).toLocaleString("es-PY", {
+          day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"
+        }) : "-";
+
+        const fotos = Array.isArray(a.fotos_url) ? a.fotos_url : [];
+        const fotosHtml = fotos.length
+          ? fotos.slice(0,2).map(u=>`<img src="${u}" class="foto-thumb" onclick="window.open('${u}','_blank')" />`).join("")
+          : '<span class="text-muted small">Sin fotos</span>';
+
+        return `
+          <tr>
+            <td>${a.id}</td>
+            <td>
+              <span class="category-dot" style="background:${catColors[a.categoria]||'#999'}"></span>
+              ${catLabel}
+            </td>
+            <td class="small">${titulo}</td>
+            <td class="small">${operador}</td>
+            <td>${deptoNombre}</td>
+            <td class="small">${fecha}</td>
+            <td>${fotosHtml}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // ============================
+    // BUSCAR
+    // ============================
+    document.getElementById("buscarReportes").oninput = (e) => {
+      const q = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll("#tablaReportes tr");
+      rows.forEach(tr => {
+        const text = tr.textContent.toLowerCase();
+        tr.style.display = text.includes(q) ? "" : "none";
+      });
+    };
+
+    document.getElementById("buscarAcciones").oninput = (e) => {
+      const q = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll("#tablaAcciones tr");
+      rows.forEach(tr => {
+        const text = tr.textContent.toLowerCase();
+        tr.style.display = text.includes(q) ? "" : "none";
+      });
+    };
+
+    // ============================
+    // MAPAS
+    // ============================
+    let mapGlobal, map30, mapHeat;
+
+    function initMapas() {
+      const center = [-25.2637, -57.5759];
+
+      mapGlobal = L.map("mapGlobal").setView(center, 11);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19
+      }).addTo(mapGlobal);
+
+      map30 = L.map("map30").setView(center, 11);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19
+      }).addTo(map30);
+
+      mapHeat = L.map("mapHeat").setView(center, 11);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19
+      }).addTo(mapHeat);
+
+      renderMapGlobal();
+      renderMap30();
+      renderMapHeat();
+    }
+
+    function renderMapGlobal() {
+      if (!mapGlobal || !reportesAll.length) return;
+
+      const markers = L.markerClusterGroup();
+      reportesAll.forEach(r => {
+        if (typeof r.lat === "number" && typeof r.lng === "number") {
+          const m = L.marker([r.lat, r.lng]);
+          m.bindPopup(`
+            <b>Reporte #${r.id}</b><br>
+            ${labelCategoria(r.categoria)}<br>
+            ${r.estado === "solucionado" ? "✅ Solucionado" : "⏳ Pendiente"}
+          `);
+          markers.addLayer(m);
+        }
+      });
+      mapGlobal.addLayer(markers);
+    }
+
+    function renderMap30() {
+      if (!map30 || !reportes30.length) return;
+
+      const markers = L.markerClusterGroup();
+      reportes30.forEach(r => {
+        if (typeof r.lat === "number" && typeof r.lng === "number") {
+          const m = L.marker([r.lat, r.lng]);
+          m.bindPopup(`
+            <b>Reporte #${r.id}</b><br>
+            ${labelCategoria(r.categoria)}<br>
+            ${r.estado === "solucionado" ? "✅ Solucionado" : "⏳ Pendiente"}
+          `);
+          markers.addLayer(m);
+        }
+      });
+      map30.addLayer(markers);
+    }
+
+    function renderMapHeat() {
+      if (!mapHeat || !reportes30.length) return;
+
+      const points = reportes30
+        .filter(r => typeof r.lat === "number" && typeof r.lng === "number")
+        .map(r => [r.lat, r.lng, 1]);
+
+      if (points.length) {
+        L.heatLayer(points, { radius: 25, blur: 15, maxZoom: 17 }).addTo(mapHeat);
+      }
+    }
+
+    // ============================
+    // MÉTRICAS RENDIMIENTO
+    // ============================
+    async function testRendimiento() {
+      addLog("Test", "Iniciando test de rendimiento...");
+
+      // Latencia Worker
+      try {
+        const start1 = performance.now();
+        const res1 = await fetch(WORKER_URL + "/", { method: "GET" });
+        const latency1 = Math.round(performance.now() - start1);
+        document.getElementById("metric_worker").textContent = latency1 + " ms";
+        addLog("Ping Worker", `${latency1}ms`);
+        addPing(latency1, res1.ok ? "ok" : "error");
+      } catch (e) {
+        document.getElementById("metric_worker").textContent = "Error";
+        addLog("Ping Worker", "Error");
+        addPing(0, "error");
+      }
+
+      // Latencia Supabase REST
+      try {
+        const start2 = performance.now();
+        const res2 = await fetch("https://oqkxvfglzhozejljwedc.supabase.co/rest/v1/departamentos?select=id&limit=1", {
+          headers: {
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xa3h2ZmdsenxvemVqbGp3ZWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUzMDU1NDksImV4cCI6MjA1MDg4MTU0OX0.lHAE5NLlPQRNfPD3Zw8VF0eVAQMV4aw87yZEY8QRZHI"
+          }
+        });
+        const latency2 = Math.round(performance.now() - start2);
+        document.getElementById("metric_supabase").textContent = latency2 + " ms";
+        addLog("Ping Supabase", `${latency2}ms`);
+      } catch (e) {
+        document.getElementById("metric_supabase").textContent = "Error";
+        addLog("Ping Supabase", "Error");
+      }
+
+      // Latencia Storage (head request)
+      try {
+        const start3 = performance.now();
+        const res3 = await fetch("https://oqkxvfglzhozejljwedc.supabase.co/storage/v1/object/public/fotos-reportes/test.jpg", {
+          method: "HEAD"
+        });
+        const latency3 = Math.round(performance.now() - start3);
+        document.getElementById("metric_storage").textContent = latency3 + " ms";
+        addLog("Ping Storage", `${latency3}ms`);
+      } catch (e) {
+        document.getElementById("metric_storage").textContent = "Error";
+        addLog("Ping Storage", "Error");
+      }
+
+      // Estado Worker
+      try {
+        const res4 = await fetch(WORKER_URL + "/", { method: "GET" });
+        if (res4.ok) {
+          document.getElementById("metric_status").innerHTML = '<span class="badge bg-success">🟢 OK</span>';
+        } else {
+          document.getElementById("metric_status").innerHTML = '<span class="badge bg-danger">🔴 Error</span>';
+        }
+      } catch (e) {
+        document.getElementById("metric_status").innerHTML = '<span class="badge bg-danger">🔴 Down</span>';
+      }
+    }
+
+    document.getElementById("btnTestRendimiento").onclick = testRendimiento;
+
+    // ============================
+    // OFFCANVAS DETALLE PREMIUM
+    // ============================
+    const detallePanel = document.getElementById("detallePanel");
+    const detalleTitulo = document.getElementById("detalleTitulo");
+    const detalleSub = document.getElementById("detalleSub");
+    const detalleCatChip = document.getElementById("detalleCatChip");
+    const detalleDeptoChip = document.getElementById("detalleDeptoChip");
+    const detalleBadge = document.getElementById("detalleBadge");
+    const detalleCiudadanoNombre = document.getElementById("detalleCiudadanoNombre");
+    const detalleCiudadanoCelular = document.getElementById("detalleCiudadanoCelular");
+    const detalleTextoReporte = document.getElementById("detalleTextoReporte");
+    const detalleFechas = document.getElementById("detalleFechas");
+    const detalleFotosCiudadano = document.getElementById("detalleFotosCiudadano");
+    const accionesListado = document.getElementById("accionesListado");
+    const btnAbrirEnMapa = document.getElementById("btnAbrirEnMapa");
+
+    function buscarReportePorId(id) {
+      return reportesAll.find(r => r.id === id);
+    }
+
+    async function obtenerAccionesPorReporte(reporteId) {
+      try {
+        const url = `https://oqkxvfglzhozejljwedc.supabase.co/rest/v1/acciones_municipales?reporte_id=eq.${reporteId}&select=*`;
+        const res = await fetch(url, {
+          headers: {
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xa3h2ZmdsenxvemVqbGp3ZWRjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUzMDU1NDksImV4cCI6MjA1MDg4MTU0OX0.lHAE5NLlPQRNfPD3Zw8VF0eVAQMV4aw87yZEY8QRZHI"
+          }
+        });
+        return await res.json();
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
+    }
+
+    function renderMiniDashboardStats(rep) {
+      // Distancia zona (simulado)
+      document.getElementById("miniStat_distancia").textContent = "~2.3 km";
+
+      // Tiempo atención
+      if (rep.resuelto_at && rep.created_at) {
+        const ms = new Date(rep.resuelto_at) - new Date(rep.created_at);
+        const h = (ms / 3600000).toFixed(1);
+        document.getElementById("miniStat_tiempo").textContent = h + " h";
+      } else {
+        document.getElementById("miniStat_tiempo").textContent = "-";
+      }
+    }
+
+    function renderMiniMapa(lat, lng) {
+      const cont = document.getElementById("miniMapaDetalle");
+      if (miniMapaInstance) {
+        miniMapaInstance.remove();
+      }
+      miniMapaInstance = L.map("miniMapaDetalle").setView([lat, lng], 15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19
+      }).addTo(miniMapaInstance);
+      L.marker([lat, lng]).addTo(miniMapaInstance);
+    }
+
+    function verificarDuplicados(rep) {
+      const duplicados = reportes30.filter(r => {
+        if (r.id === rep.id) return false;
+        if (r.categoria !== rep.categoria) return false;
+        const dist = distHaversine(rep.lat, rep.lng, r.lat, r.lng);
+        return dist < 100;
+      });
+
+      const cont = document.getElementById("duplicadosLista");
+      if (!duplicados.length) {
+        cont.innerHTML = '<span class="text-muted small">No se detectaron duplicados cercanos.</span>';
+      } else {
+        cont.innerHTML = duplicados.map(d => `
+          <div class="mb-1">
+            <a href="javascript:void(0)" onclick="abrirDetalle(${d.id})">
+              Reporte #${d.id}
+            </a> · ${labelCategoria(d.categoria)} · ${(distHaversine(rep.lat, rep.lng, d.lat, d.lng)).toFixed(0)}m
+          </div>
+        `).join("");
+      }
+    }
+
+    function distHaversine(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const toRad = (g) => g * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function renderAccionesLista(acciones) {
+      if (!acciones.length) {
+        accionesListado.innerHTML = '<div class="small text-muted">Sin acciones municipales registradas aún.</div>';
+        return;
+      }
+
+      acciones.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+      const cont = document.createElement("div");
+      cont.className = "timeline";
+
+      acciones.forEach(a => {
+        const fechaStr = a.created_at
+          ? new Date(a.created_at).toLocaleString("es-PY", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            })
+          : "Sin fecha";
+
+        const fotos = Array.isArray(a.fotos_url) ? a.fotos_url : [];
+
+        const item = document.createElement("div");
+        item.className = "timeline-item";
+
+        item.innerHTML = `
+          <div class="timeline-point"></div>
+          <div class="timeline-event">
+            <div class="timeline-header">
+              <strong>${a.titulo || (a.categoria || "Acción municipal")}</strong>
+              <span class="text-muted small"> · ${fechaStr}</span>
+            </div>
+            <div class="timeline-content small mt-1">
+              <b>Operador:</b> ${a.creado_por_nombre || "N/D"}
+              ${a.creado_por_identificador ? ` (${a.creado_por_identificador})` : ""}
+              <br>
+              ${a.detalle || "Acción registrada."}
+            </div>
+            ${
+              a.observacion
+                ? `<div class="small mt-2"><b>Observación:</b> ${a.observacion}</div>`
+                : ""
+            }
+            ${
+              a.social_url
+                ? `<div class="small mt-2"><a href="${a.social_url}" target="_blank">🔗 Ver publicación</a></div>`
+                : ""
+            }
+          </div>
+        `;
+
+        if (fotos.length) {
+          const fotosDiv = document.createElement("div");
+          fotosDiv.className = "acciones-fotos mt-2";
+          fotos.forEach(u => {
+            const img = document.createElement("img");
+            img.src = u;
+            img.onclick = () => window.open(u, "_blank");
+            fotosDiv.appendChild(img);
+          });
+          item.querySelector(".timeline-event").appendChild(fotosDiv);
+        }
+
+        cont.appendChild(item);
+      });
+
+      accionesListado.innerHTML = "";
+      accionesListado.appendChild(cont);
+    }
+
+    async function abrirDetalle(id) {
+      const rep = buscarReportePorId(id);
+      if (!rep) {
+        alert("Reporte no encontrado.");
+        return;
+      }
+      reporteDetalleActual = rep;
+
+      const catLabel = labelCategoria(rep.categoria);
+      const barrio = rep.barrio || "Sin barrio";
+      const deptoNombre = rep.departamento_id && deptosMap[rep.departamento_id]
+        ? deptosMap[rep.departamento_id]
+        : "Sin asignar";
+
+      detalleTitulo.textContent = `Reporte #${rep.id}`;
+      detalleSub.textContent = `${catLabel} · ${barrio} · ${deptoNombre}`;
+
+      detalleCatChip.textContent = catLabel;
+      const cColor = catColors[rep.categoria] || "#666";
+      detalleCatChip.style.backgroundColor = cColor;
+      detalleCatChip.style.borderColor = cColor;
+
+      detalleDeptoChip.textContent = deptoNombre;
+
+      if (rep.estado === "solucionado") {
+        detalleBadge.textContent = "Solucionado";
+        detalleBadge.classList.remove("bg-warning");
+        detalleBadge.classList.add("bg-success");
+      } else {
+        detalleBadge.textContent = "Pendiente";
+        detalleBadge.classList.remove("bg-success");
+        detalleBadge.classList.add("bg-warning");
+      }
+
+      detalleCiudadanoNombre.textContent = rep.nombre || "-";
+      detalleCiudadanoCelular.textContent = rep.celular || "-";
+      detalleTextoReporte.textContent = rep.detalle || "Sin descripción.";
+
+      const partesFechas = [];
+      if (rep.created_at) {
+        partesFechas.push(
+          `Creado: <b>${
+            new Date(rep.created_at).toLocaleString("es-PY", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            })
+          }</b>`
+        );
+      }
+      if (rep.estado === "solucionado" && rep.resuelto_at) {
+        partesFechas.push(
+          `Resuelto: <b>${
+            new Date(rep.resuelto_at).toLocaleString("es-PY", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            })
+          }</b>`
+        );
+      }
+      detalleFechas.innerHTML = partesFechas.join("<br/>") || "-";
+
+      detalleFotosCiudadano.innerHTML = "";
+      const fotos = Array.isArray(rep.fotos_url) ? rep.fotos_url : [];
+      if (!fotos.length) {
+        detalleFotosCiudadano.innerHTML = '<span class="text-muted small">Sin fotos adjuntas.</span>';
+      } else {
+        fotos.forEach(u => {
+          const img = document.createElement("img");
+          img.src = u;
+          img.className = "me-2 mb-2";
+          img.style.width = "72px";
+          img.style.height = "72px";
+          img.style.objectFit = "cover";
+          img.style.borderRadius = "8px";
+          img.style.cursor = "pointer";
+          img.onclick = () => window.open(u, "_blank");
+          detalleFotosCiudadano.appendChild(img);
+        });
+      }
+
+      renderMiniDashboardStats(rep);
+      renderMiniMapa(rep.lat, rep.lng);
+      verificarDuplicados(rep);
+      accionesListado.innerHTML = '<div class="small text-muted">Cargando acciones...</div>';
+
+      btnAbrirEnMapa.onclick = () => {
+        window.location.href = `/index.html?lat=${rep.lat}&lng=${rep.lng}&zoom=17`;
+      };
+
+      const bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(detallePanel);
+      bsOffcanvas.show();
+
+      const acciones = await obtenerAccionesPorReporte(id);
+      renderAccionesLista(acciones);
+    }
+    window.abrirDetalle = abrirDetalle;
+
+    // ============================
+    // EXPORTAR TODO
+    // ============================
+    document.getElementById("btnExportAll").onclick = () => {
+      let csv = "ID,Categoria,Departamento,Barrio,Detalle,Estado,Fecha\n";
+      reportesAll.forEach(r => {
+        const detalle = (r.detalle || "").replace(/,/g, " ");
+        const deptoNombre = r.departamento_id && deptosMap[r.departamento_id]
+          ? deptosMap[r.departamento_id]
+          : "";
+        csv += `${r.id},${r.categoria},${deptoNombre},${r.barrio || ""},${detalle},${r.estado},${r.created_at || ""}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "reportes_completo.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+
+    // ============================
+    // REFRESH
+    // ============================
+    document.getElementById("btnRefresh").onclick = async () => {
+      await cargarDepartamentos();
+      await cargarUsuarios();
+      await cargarEstadisticasGlobales();
+      await cargarReportes();
+      await cargarAcciones();
+      if (mapGlobal) mapGlobal.remove();
+      if (map30) map30.remove();
+      if (mapHeat) mapHeat.remove();
+      initMapas();
+      addLog("Refresh", "Datos actualizados");
+    };
+
+    // ============================
+    // INIT
+    // ============================
+    (async () => {
+      await cargarDepartamentos();
+      await cargarUsuarios();
+      await cargarEstadisticasGlobales();
+      await cargarReportes();
+      await cargarAcciones();
+      initMapas();
+      testRendimiento();
+      addLog("Init", "Panel superadmin cargado");
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>AsuAlerta – Operador móvil</title>
+  <meta name="theme-color" content="#d32f2f" />
+
+  <!-- Tabler CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css" rel="stylesheet"/>
+
+  <!-- Boxicons -->
+  <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Leaflet Routing Machine -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+  <!-- CSS global AsuAlerta -->
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+
+  <style>
+    body{
+      background:var(--bg);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Arial;
+    }
+
+    .topbar{
+      padding:10px 12px;
+      background:var(--bg-card);
+      border-bottom:1px solid var(--border);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .titulo-app{
+      font-size:1.1rem;
+      font-weight:800;
+      color:var(--accent);
+    }
+    
+
+    .chip-row{
+      padding:10px;
+      display:flex;flex-wrap:wrap;gap:8px;
+    }
+
+    .card-form{
+      background:var(--bg-card);
+      padding:10px 12px 14px;
+      margin:8px 10px 16px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+    }
+
+    .form-label{
+      font-size:.82rem;
+      font-weight:600;
+      margin-bottom:3px;
+      color:var(--text);
+    }
+    .form-control{
+      background:var(--bg);
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      font-size:.9rem;
+      padding:7px 9px;
+    }
+    textarea.form-control{
+      min-height:60px;
+    }
+.header-info .weather-mini {
+  display: flex !important;
+  align-items: center;
+  gap: 4px;
+}
+
+.logo-asualerta {
+  width: 130px;
+  height: auto;
+  object-fit: contain;
+}
+
+
+    .btn-primary{
+      background:var(--accent);
+      border-color:var(--accent);
+      font-weight:700;
+      width:100%;
+      padding:10px 10px;
+      border-radius:12px;
+      font-size:.95rem;
+      margin-top:10px;
+    }
+
+    .gps-status{
+      margin:6px 0 10px;
+      color:var(--text-muted);
+      font-size:.8rem;
+    }
+
+    .map-wrapper{
+      position:relative;
+      margin-top:4px;
+    }
+    #mapPreview{
+      height:230px;
+      border-radius:14px;
+      border:2px solid var(--accent);
+      overflow:hidden;
+    }
+
+    .map-btns{
+      position:absolute;
+      top:8px;right:8px;
+      z-index:9000;
+      display:flex;flex-direction:column;gap:6px;
+    }
+    .map-btns button{
+      background:var(--bg-card);
+      border:1px solid var(--border);
+      color:var(--text);
+      padding:6px 8px;
+      border-radius:10px;
+      font-size:.72rem;
+      font-weight:600;
+      box-shadow:0 2px 6px rgba(0,0,0,.25);
+    }
+
+    .compass-widget{
+      position:absolute;
+      bottom:8px;left:8px;
+      z-index:9000;
+      background:var(--bg-card);
+      border-radius:999px;
+      border:1px solid var(--border);
+      padding:4px 8px;
+      font-size:.75rem;
+      display:flex;align-items:center;gap:6px;
+      box-shadow:0 2px 6px rgba(0,0,0,.25);
+    }
+    .compass-arrow{
+      width:14px;height:14px;
+      border-radius:999px;
+      border:2px solid var(--accent);
+      border-top-color:transparent;
+      border-left-color:transparent;
+      transform:rotate(0deg);
+      transition:transform .15s linear;
+    }
+
+    /* preview fotos multi (usa estilos globales .fotos-preview y .foto-thumb) */
+    #previewFotos{
+      margin-top:6px;
+    }
+
+    @media (max-width:380px){
+      .topbar{padding:8px 8px;}
+      .titulo-app{font-size:1rem;}
+      #mapPreview{height:210px;}
+      .card-form{margin:6px 6px 12px;padding:8px 9px 12px;}
+    }
+    .circle-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--text);
+  transition: background .2s, color .2s;
+}
+
+.circle-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.circle-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: background .2s, color .2s;
+}
+
+.circle-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.header-meta-row {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-left:4px;
+}
+
+.weather-box {
+  display:flex;
+  align-items:center;
+  gap:4px;
+  font-size:.9rem;
+}
+
+
+
+  </style>
+</head>
+<header id="headerOperador" class="header">
+    <div class="header-left">
+  <div class="header-logo-row">
+    <img src="img/logo-asualerta.png" class="logo-asualerta">
+  </div>
+
+  <div class="header-meta-row">
+    <span id="fechaHeader" class="fecha"></span>
+    <div class="weather-box">
+      <i id="weatherIcon" class="wi wi-day-sunny weather-icon-anim"></i>
+      <span id="weatherTemp">--°C</span>
+    </div>
+  </div>
+</div>
+
+
+
+    <button id="menuBtnMovil" class="circle-btn" title="Menú">
+  ☰
+</button>
+
+</header>
+
+<!-- MENÚ LATERAL -->
+<aside id="sideMenuMovil">
+  <button id="closeMenuMovil" class="close-btn">×</button>
+
+  <h2 class="menu-title">AsuAlerta</h2>
+  <p class="menu-sub">Operador móvil</p>
+
+  <nav class="menu-nav">
+    <a href="operador-movil.html">📍 Panel del operador</a>
+    <a href="ciudad.html?tab=acciones">🏛️ Acciones municipales</a>
+    <a href="ciudad.html?tab=reportes">📘 Reportes ciudadanos</a>
+    <a href="estadisticas.html">📊 Estadísticas</a>
+  </nav>
+
+  <div class="contact-box">
+    <p>Municipalidad de Asunción</p>
+    <p>Tel: (+595 21) 627 3000</p>
+  </div>
+</aside>
+
+<body>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="titulo-app">Operador móvil</div>
+    <button id="themeToggle" class="circle-btn" title="Cambiar tema">
+  ◐
+</button>
+
+  </div>
+
+   <!-- CATEGORÍAS -->
+  <h3 class="titulo-seccion">
+    Departamento / categoría
+  </h3>
+  <div class="dropdown-wrapper">
+    <select id="selectCategoriaMovil" class="dropdown-asualerta">
+      <option value="">Seleccioná una categoría…</option>
+    </select>
+  </div>
+
+
+  <!-- FORM -->
+  <div class="card-form">
+
+    <label class="form-label">Título de la acción</label>
+    <input id="tituloAccion" class="form-control" placeholder="Ej: Bache rellenado">
+
+    <label class="form-label mt-2">Detalle</label>
+    <textarea id="detalleAccion" class="form-control"
+              placeholder="Describí brevemente la acción realizada"></textarea>
+
+    <label class="form-label mt-2">Observación</label>
+    <textarea id="observacionAccion" class="form-control"
+              placeholder="Texto interno para el panel de escritorio"></textarea>
+
+    <div class="gps-status" id="estadoGps">📡 Obteniendo ubicación…</div>
+
+    <h3 style="margin-top:2px;font-weight:700;color:var(--text);font-size:.9rem;">
+      Ubicación detectada
+    </h3>
+
+    <div class="map-wrapper">
+      <div id="mapPreview"></div>
+
+      <div class="map-btns">
+        <button id="btnRecentrar">📍 Mi ubicación</button>
+        <button id="btnModoMapa">🛰️ Satélite</button>
+        <button id="btnRuta">📌 Ruta</button>
+      </div>
+
+      <div class="compass-widget" id="compassWidget">
+        <div class="compass-arrow" id="compassArrow"></div>
+        <span id="headingText">0°</span>
+      </div>
+    </div>
+<label class="form-label mt-3">Tomar foto (hasta 5 – máx 5MB total)</label>
+
+<input id="fotoAccion" type="file" accept="image/*" capture="environment">
+
+
+<div id="previewFotos" class="fotos-preview"></div>
+    <label class="form-label mt-3">Enlace publicación (opcional)</label>
+    <input id="socialAccion" class="form-control" placeholder="https://facebook.com/post...">
+
+    <button id="btnGuardarAccion" class="primary-btn">
+  Registrar acción
+</button>
+
+  </div>
+
+  <div style="padding:10px 12px 16px;text-align:center;font-size:.8rem;">
+    <a href="/panel-operador.html" style="color:var(--accent);font-weight:700;">
+      ← Volver al panel operador
+    </a>
+  </div>
+
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Routing -->
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+ 
+  
+
+  <!-- LÓGICA PRINCIPAL -->
+  <script type="module" src="./operador-movil.js"></script>
+  <script>
+  const menuBtnMovil   = document.getElementById("menuBtnMovil");
+  const closeMenuMovil = document.getElementById("closeMenuMovil");
+  const sideMenuMovil  = document.getElementById("sideMenuMovil");
+
+  if(menuBtnMovil){
+    menuBtnMovil.onclick = () => sideMenuMovil.classList.add("open");
+  }
+  if(closeMenuMovil){
+    closeMenuMovil.onclick = () => sideMenuMovil.classList.remove("open");
+  }
+</script>
+<script type="module" src="./operador-movil.js"></script>
+<script>
+  const html = document.documentElement;
+  const themeBtn = document.getElementById("themeToggle");
+
+  function applyTheme() {
+    const saved = localStorage.getItem("asu_theme") || "light";
+    html.setAttribute("data-theme", saved);
+  }
+
+  themeBtn.addEventListener("click", () => {
+    const cur = html.getAttribute("data-theme") || "light";
+    const next = cur === "dark" ? "light" : "dark";
+    html.setAttribute("data-theme", next);
+    localStorage.setItem("asu_theme", next);
+  });
+
+  applyTheme();
+</script>
+
+
+<script>
+function actualizarFecha(){
+  const el = document.getElementById("fechaHeader");
+  if(!el) return;
+
+  const dias = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+  const f = new Date();
+  const txt = `${dias[f.getDay()]} ${f.getDate()} ${meses[f.getMonth()]}`;
+  el.textContent = txt;
+}
+actualizarFecha();
+</script>
+<script>
+async function actualizarClimaMini(){
+  const iconEl = document.getElementById("weatherIcon");
+  const tempEl = document.getElementById("weatherTemp");
+  if(!iconEl || !tempEl) return;
+
+  try{
+    const datos = await fetch("https://api.open-meteo.com/v1/forecast?latitude=-25.28&longitude=-57.64&current_weather=true").then(r=>r.json());
+    const t = datos.current_weather.temperature;
+    tempEl.textContent = t + "°C";
+
+    const code = datos.current_weather.weathercode;
+    let icono = "wi wi-day-sunny";
+
+    if(code >= 1 && code <= 3) icono = "wi wi-day-cloudy";
+    if(code >= 45 && code <= 48) icono = "wi wi-fog";
+    if(code >= 51 && code <= 67) icono = "wi wi-sprinkle";
+    if(code >= 71 && code <= 77) icono = "wi wi-snow";
+    if(code >= 80 && code <= 82) icono = "wi wi-rain";
+    if(code >= 95) icono = "wi wi-thunderstorm";
+
+    iconEl.className = icono + " weather-icon-anim";
+  }catch(e){
+    console.log("Error clima mini",e);
+  }
+}
+actualizarClimaMini();
+</script>
+
+</body>
+</html>
