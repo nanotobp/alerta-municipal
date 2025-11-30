@@ -163,7 +163,6 @@ async function cargarAcciones(){
     .order("created_at", { ascending:false });
   if (data) acciones = data;
 }
-
 // ----------------------
 // VISOR DE FOTOS
 // ----------------------
@@ -340,7 +339,6 @@ function bindFormulario(){
 
     form.style.display = "block";
   };
-
   // ACCIONES MUNICIPALES
   btnAcciones.onclick = () => {
     const primeras = acciones.slice(0, 5);
@@ -383,7 +381,7 @@ function bindFormulario(){
     document.getElementById(id).oninput = actualizarResumen;
   });
 
-  // FOTO
+  // FOTO (MÓDULO CORREGIDO)
   const takePhotoBtn = document.getElementById("takePhoto");
   const video        = document.getElementById("camera");
   const canvas       = document.getElementById("canvas");
@@ -421,18 +419,23 @@ function bindFormulario(){
     fotosCont.innerHTML = "";
     fotos.forEach((blob, idx) => {
       const url = URL.createObjectURL(blob);
+
+      // CORREGIDO: miniatura centrada y sin desbordes
       const d = document.createElement("div");
       d.className = "foto-thumb";
       d.innerHTML = `
-        <img src="${url}" />
+        <img src="${url}" style="max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;display:block;margin:auto;" />
         <div class="remove-photo">×</div>
       `;
+
       d.querySelector(".remove-photo").onclick = () => {
         fotos.splice(idx,1);
         renderFotos();
         actualizarResumen();
       };
+
       d.querySelector("img").onclick = () => openFotoViewer([url]);
+
       fotosCont.appendChild(d);
     });
   }
@@ -481,6 +484,7 @@ function bindFormulario(){
     const urls = [];
     for (let i=0; i<fotos.length; i++){
       const name = `foto_${Date.now()}_${i}.jpg`;
+
       const { error:upErr } = await supabase
         .storage.from("fotos")
         .upload(name, fotos[i], { contentType:"image/jpeg", upsert:false });
