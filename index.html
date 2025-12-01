@@ -199,11 +199,12 @@
       </p>
 
       <div class="cat-grid">
-        <button class="cat-btn" data-cat="bache">Bache 🚧</button>
-        <button class="cat-btn" data-cat="arbol_caido">Árbol caído 🌳</button>
-        <button class="cat-btn" data-cat="basural">Basural 🗑️</button>
-        <button class="cat-btn" data-cat="cano_roto">Caño roto 🚰</button>
-      </div>
+  <button class="cat-btn" data-cat="baches">Bache 🚧</button>
+  <button class="cat-btn" data-cat="arbol_caido">Árbol caído 🌳</button>
+  <button class="cat-btn" data-cat="basural">Basural 🗑️</button>
+  <button class="cat-btn" data-cat="cano_roto">Caño roto 🚰</button>
+</div>
+
 
       <input type="text" id="nombre" placeholder="Nombre y apellido *" />
       <input type="tel" id="celular" placeholder="Celular 098x... *" />
@@ -315,6 +316,26 @@
   });
 }
 
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then((reg) => {
+      console.log("SW instalado", reg);
+
+      // Si hay una nueva versión → refresca inmediatamente
+      reg.onupdatefound = () => {
+        const sw = reg.installing;
+        sw.onstatechange = () => {
+          if (sw.state === "installed" && navigator.serviceWorker.controller) {
+            console.log("Nueva versión detectada. Refrescando...");
+            window.location.reload(true);
+          }
+        };
+      };
+    })
+    .catch(err => console.error("Error SW:", err));
+}
 </script>
 
 </body>
