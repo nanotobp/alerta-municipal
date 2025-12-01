@@ -834,6 +834,17 @@ body.dark-theme .select-cat {
   color:var(--text-muted) !important;
 }
 
+.modal-summary-box {
+  background: #f1f1f1;
+  padding: 12px;
+  margin: 15px 0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4rem;
+}
+[data-theme="dark"] .modal-summary-box {
+  background: #333;
+}
 
 /* FOOTER */
 .main-footer{
