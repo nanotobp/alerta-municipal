@@ -773,6 +773,69 @@ body.dark-theme .select-cat {
   gap:10px;
 }
 
+/* =============================
+   DARK MODE — Modales AsuAlerta
+   ============================= */
+
+/* Modal genérico (Primero ubicá el problema) */
+body.dark #modalAsu .asu-modal-content {
+  background-color: #222 !important;
+  color: #f5f5f5 !important;
+  border: 1px solid #444;
+}
+
+body.dark #modalAsu .asu-modal-content h2 {
+  color: #fff !important;
+}
+
+body.dark #modalAsu .asu-modal-content p {
+  color: #ddd !important;
+}
+
+body.dark #modalAsu .modal-btn {
+  background: #d32f2f !important;
+  color: #fff !important;
+  border: none;
+}
+
+body.dark #modalAsu .modal-btn-secondary {
+  background: #444 !important;
+  color: #fff !important;
+  border: 1px solid #666;
+}
+
+/* =============================
+   DARK MODE — Modal de instalación PWA
+   (#installModal)
+   ============================= */
+
+body.dark #installModal .mini-install-content {
+  background-color: #222 !important;
+  color: #f5f5f5 !important;
+  border: 1px solid #444;
+}
+
+body.dark #installModal h3 {
+  color: #fff !important;
+}
+
+body.dark #installModal p {
+  color: #ddd !important;
+}
+
+body.dark #installModal .mini-install-close {
+  background: #d32f2f !important;
+  color: white !important;
+  border: none !important;
+}
+
+body.dark #installModal .dont-show-label {
+  color: #ccc !important;
+}
+
+body.dark #installModal input[type="checkbox"] {
+  accent-color: #d32f2f !important;
+}
 
 
 #sideMenuMovil {
