@@ -608,3 +608,60 @@ if (repErr) {
       renderMapa();
     }).subscribe();
 })();
+// ==============================
+// MODAL INSTALACIÓN PWA — con detección real
+// ==============================
+
+(function () {
+  const modal = document.getElementById("installModal");
+  const closeBtn = document.getElementById("closeInstallModal");
+  const dontShow = document.getElementById("dontShowInstall");
+
+  if (!modal) return;
+
+  const KEY_COUNT = "pwa_install_shown";
+  const KEY_DONT = "pwa_install_never";
+
+  // ------------------------------------
+  // 🟣 DETECCIÓN: ¿La PWA ya está instalada?
+  // ------------------------------------
+
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches
+                        || window.navigator.standalone === true; 
+  // iOS usa navigator.standalone
+
+  if (isStandalone) {
+    // ya instalada → jamás mostrar
+    return;
+  }
+
+  // ------------------------------------
+  // 🟣 CHEQUEOS DE CONFIGURACIÓN LOCAL
+  // ------------------------------------
+  const shownCount = parseInt(localStorage.getItem(KEY_COUNT) || "0");
+  const neverShow = localStorage.getItem(KEY_DONT) === "1";
+
+  if (neverShow) return;
+
+  // Mostrar solo las primeras 2 veces
+  if (shownCount < 2) {
+    setTimeout(() => {
+      modal.style.display = "flex";
+    }, 1200);
+  }
+
+  // Incrementar contador
+  localStorage.setItem(KEY_COUNT, shownCount + 1);
+
+  // ------------------------------------
+  // 🟣 BOTÓN CERRAR
+  // ------------------------------------
+  closeBtn.onclick = () => {
+    modal.style.display = "none";
+
+    if (dontShow.checked) {
+      localStorage.setItem(KEY_DONT, "1");
+    }
+  };
+})();
+
