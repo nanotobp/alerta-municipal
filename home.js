@@ -518,10 +518,13 @@ for (let i = 0; i < fotos.length; i++) {
       return;
     }
 
-    let departamento_id = 1;
-    if (categoriaReporte === "basural") departamento_id = 2;
-    else if (categoriaReporte === "arbol_caido") departamento_id = 3;
-    else if (categoriaReporte === "cano_roto") departamento_id = 4;
+    let departamento_id = null;
+
+if (categoriaReporte === "baches") departamento_id = 1;
+else if (categoriaReporte === "basural") departamento_id = 2;
+else if (categoriaReporte === "arbol_caido") departamento_id = 3;
+else if (categoriaReporte === "cano_roto") departamento_id = 4;
+
 
     const payload = {
       lat:puntoSeleccionado.lat,
@@ -534,9 +537,35 @@ for (let i = 0; i < fotos.length; i++) {
       departamento_id
     };
 
-    await supabase.from("reportes").insert(payload);
+    const { error: repErr } = await supabase.from("reportes").insert(payload);
 
-    alert("¡Gracias! Tu reporte fue enviado.");
+if (repErr) {
+  console.error("ERROR INSERTANDO REPORTE:", repErr);
+  alert("No se pudo guardar tu reporte. Revisá la consola.");
+  sendBtn.disabled = false;
+  sendBtn.textContent = "Enviar reporte";
+  return;
+}
+
+
+    abrirModal(`
+  <h2>¡Reporte enviado con éxito! 🎉</h2>
+  <p>Gracias por ayudarnos a mejorar la ciudad.</p>
+
+  <div class="modal-summary-box">
+    <b>Resumen del reporte:</b><br>
+    Tipo: ${categoriaReporte.toUpperCase()}<br>
+    Nombre: ${nombre}<br>
+    Celular: ${celular}<br>
+    Barrio: ${barrio}<br>
+    Fotos enviadas: ${urls.length}
+  </div>
+
+  <button class="modal-btn" onclick="document.getElementById('modalAsu').classList.remove('open')">
+    Cerrar
+  </button>
+`);
+
     form.style.display = "none";
     fotos = [];
     document.getElementById("fotosContainer").innerHTML = "";
