@@ -471,62 +471,81 @@ function renderTablaAcciones(accFil) {
   });
 }
 
-// =============================================================
-//  MODAL DETALLE
-// =============================================================
 function abrirModalDetalle(obj) {
   const body   = document.getElementById("modalDetalleBody");
   const titulo = document.getElementById("modalDetalleTitulo");
   const modal  = document.getElementById("modalDetalle");
   if (!body || !titulo || !modal) return;
 
-  let fotos = Array.isArray(obj.fotos_url) ? obj.fotos_url : [];
+  const fotos = Array.isArray(obj.fotos_url) ? obj.fotos_url : [];
 
-  titulo.textContent = obj.titulo || "Detalle";
+  titulo.textContent = obj.titulo || obj.barrio || "Detalle";
 
   body.innerHTML = `
-    <div class="modal-detalle-label">ID</div>
-    <div class="modal-detalle-valor">${obj.id}</div>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="modal-detalle-label">ID</div>
+        <div class="modal-detalle-valor">${obj.id}</div>
 
-    <div class="modal-detalle-label">Fecha</div>
-    <div class="modal-detalle-valor">${new Date(obj.created_at).toLocaleString("es-PY")}</div>
+        <div class="modal-detalle-label">Fecha</div>
+        <div class="modal-detalle-valor">${new Date(obj.created_at).toLocaleString("es-PY")}</div>
 
-    ${
-      obj.barrio
-        ? `<div class="modal-detalle-label">Barrio</div>
-           <div class="modal-detalle-valor">${obj.barrio}</div>`
-        : ""
-    }
+        ${obj.barrio ? `
+        <div class="modal-detalle-label">Barrio</div>
+        <div class="modal-detalle-valor">${obj.barrio}</div>` : ""}
 
-    ${
-      obj.titulo
-        ? `<div class="modal-detalle-label">Título</div>
-           <div class="modal-detalle-valor">${obj.titulo}</div>`
-        : ""
-    }
+        ${obj.titulo ? `
+        <div class="modal-detalle-label">Título</div>
+        <div class="modal-detalle-valor">${obj.titulo}</div>` : ""}
 
-    <div class="modal-detalle-label">Detalle</div>
-    <div class="modal-detalle-valor">${obj.detalle || "Sin descripción"}</div>
+        <div class="modal-detalle-label">Detalle</div>
+        <div class="modal-detalle-valor">${obj.detalle || "Sin descripción"}</div>
 
-    ${
-      obj.observacion
-        ? `<div class="modal-detalle-label">Observación</div>
-           <div class="modal-detalle-valor">${obj.observacion}</div>`
-        : ""
-    }
+        ${obj.observacion ? `
+        <div class="modal-detalle-label">Observación</div>
+        <div class="modal-detalle-valor">${obj.observacion}</div>` : ""}
 
-    ${
-      fotos.length
-        ? `<div class="modal-detalle-label">Fotos</div>
-           <div class="fotos-grid-modal">
-             ${fotos.map(u => `<img src="${u}">`).join("")}
-           </div>`
-        : ""
-    }
+        ${fotos.length ? `
+        <div class="modal-detalle-label mt-2">Fotos</div>
+        <div class="fotos-grid-modal">
+          ${fotos.map(u => `<img src="${u}">`).join("")}
+        </div>` : ""}
+      </div>
+
+      <!-- Columna derecha con mapa -->
+      <div class="col-md-6">
+        <div class="modal-detalle-label">Ubicación</div>
+        <div id="modalMapa" style="width:100%;height:260px;border-radius:10px;border:1px solid #ddd;"></div>
+
+        <a href="${obj.tipo === 'acc'
+          ? `historial-intendente.html?id=${obj.id}&type=acc`
+          : `mapa-historico.html?id=${obj.id}&type=rep`
+        }" 
+           target="_blank" 
+           class="btn btn-primary btn-sm mt-2 w-100">
+           Ver en mapa histórico
+        </a>
+      </div>
+    </div>
   `;
 
-  new bootstrap.Modal(modal).show();
+  const modalInstance = new bootstrap.Modal(modal);
+  modalInstance.show();
+
+  // Inicializar mapita cuando abra
+  setTimeout(() => {
+    const m = L.map("modalMapa").setView([obj.lat, obj.lng], 16);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(m);
+
+    const icon = L.divIcon({
+      className: "emoji-marker",
+      html: `<span style="font-size:24px">${obj.tipo === "acc" ? "🔵" : "🔴"}</span>`
+    });
+
+    L.marker([obj.lat, obj.lng], { icon }).addTo(m);
+  }, 200);
 }
+
 
 // FIX: botón VER que antes solo funcionaba una vez
 function bindBotonesVer(repFil, accFil) {
@@ -539,7 +558,12 @@ function bindBotonesVer(repFil, accFil) {
       if (tipo === "rep") obj = repFil.find(r => r.id === id);
       if (tipo === "acc") obj = accFil.find(a => a.id === id);
 
-      if (obj) abrirModalDetalle(obj);
+      if (obj) {
+  if (tipo === "rep") obj.tipo = "rep";
+  if (tipo === "acc") obj.tipo = "acc";
+  abrirModalDetalle(obj);
+}
+
     });
   });
 }
@@ -590,14 +614,37 @@ function renderTodo() {
   destruir(chartOperadores);
   destruir(chartTopCats);
 
-  chartRepCat = chartBarras(document.getElementById("chartReportesCat"), repLabels, repVals, repCols);
-  chartAccCat = chartBarras(document.getElementById("chartAccionesCat"), accLabels, accVals, accCols);
+  chartRepCat = chartBarras(
+  document.getElementById("chartReportesCat")?.getContext("2d"),
+  repLabels, repVals, repCols
+);
 
-  chartLinea   = chartLineaDia(document.getElementById("chartLineaDia"), repFil, accFil);
-  chartPendSol = chartPastelPendSol(document.getElementById("chartPendSol"), repFil);
+chartAccCat = chartBarras(
+  document.getElementById("chartAccionesCat")?.getContext("2d"),
+  accLabels, accVals, accCols
+);
 
-  chartOperadores = chartAccionesPorOperador(document.getElementById("chartOperadores"), accFil);
-  chartTopCats    = chartTopCategoriasAccion(document.getElementById("chartTopCats"), accFil);
+chartLinea = chartLineaDia(
+  document.getElementById("chartLineaDia")?.getContext("2d"),
+  repFil, accFil
+);
+
+chartPendSol = chartPastelPendSol(
+  document.getElementById("chartPendSol")?.getContext("2d"),
+  repFil
+);
+
+chartOperadores = chartAccionesPorOperador(
+  document.getElementById("chartOperadores")?.getContext("2d"),
+  accFil
+);
+
+chartTopCats = chartTopCategoriasAccion(
+  document.getElementById("chartTopCats")?.getContext("2d"),
+  accFil
+);
+
+
 }
 
 // =============================================================
