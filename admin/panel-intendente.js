@@ -1,7 +1,6 @@
 // =============================================================
 //  PANEL INTENDENTE – AsuAlerta
 //  Solo lectura – KPIs, mapas, acciones, reportes y gráficos
-//  Compatibilidad total con Worker y BD actuales
 // =============================================================
 
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
@@ -29,6 +28,43 @@ let layerInt;
 
 // Gráficos
 let chartRepCat, chartAccCat, chartLinea, chartPendSol, chartOperadores, chartTopCats;
+
+// =============================================================
+//  AUTH INTENDENTE (localStorage)
+// =============================================================
+function initAuthIntendente() {
+  const token = localStorage.getItem("asu_jwt");
+  const rol   = localStorage.getItem("asu_rol");
+  const email = localStorage.getItem("asu_email");
+
+  // si no hay token o no es intendente -> al login
+  if (!token || rol !== "intendente") {
+    window.location.href = "login.html";
+    return false;
+  }
+
+  const short = email ? email.split("@")[0] : "Intendente";
+
+  const shortEl = document.getElementById("userEmailShort");
+  const fullEl  = document.getElementById("userEmailFull");
+  const btnOut  = document.getElementById("btnCerrarSesion");
+
+  if (shortEl) shortEl.textContent = short;
+  if (fullEl)  fullEl.textContent  = email || "";
+
+  if (btnOut) {
+    btnOut.addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.removeItem("asu_jwt");
+      localStorage.removeItem("asu_rol");
+      localStorage.removeItem("asu_email");
+      localStorage.removeItem("asu_departamento");
+      window.location.href = "login.html";
+    });
+  }
+
+  return true;
+}
 
 // -------------------------------------------------------------
 //  HELPERS FECHA / RANGO
@@ -148,6 +184,7 @@ function destruir(ref) {
 }
 
 function chartBarras(ctx, labels, data, colors) {
+  if (!ctx) return null;
   return new Chart(ctx, {
     type: "bar",
     data: {
@@ -167,6 +204,7 @@ function chartBarras(ctx, labels, data, colors) {
 }
 
 function chartLineaDia(ctx, repFil, accFil) {
+  if (!ctx) return null;
   const out = {};
 
   repFil.forEach(r => {
@@ -209,6 +247,8 @@ function chartLineaDia(ctx, repFil, accFil) {
 }
 
 function chartPastelPendSol(ctx, repFil) {
+  if (!ctx) return null;
+
   const pend = repFil.filter(r => r.estado === "pendiente").length;
   const sol  = repFil.filter(r => r.estado === "solucionado").length;
 
@@ -228,6 +268,8 @@ function chartPastelPendSol(ctx, repFil) {
 }
 
 function chartAccionesPorOperador(ctx, accFil) {
+  if (!ctx) return null;
+
   const map = {};
   accFil.forEach(a => {
     const email = a.creado_por_email;
@@ -243,6 +285,8 @@ function chartAccionesPorOperador(ctx, accFil) {
 }
 
 function chartTopCategoriasAccion(ctx, accFil) {
+  if (!ctx) return null;
+
   const map = {};
 
   accFil.forEach(a => {
@@ -257,6 +301,26 @@ function chartTopCategoriasAccion(ctx, accFil) {
     entries.map(e => e[1]),
     entries.map(() => "#6a1b9a")
   );
+}
+
+// =============================================================
+//  VIEWER SIMPLE DE FOTOS (para popups del mapa)
+// =============================================================
+function openFotoViewer(urls, index = 0) {
+  if (!Array.isArray(urls) || !urls.length) return;
+  const modal = document.getElementById("modalDetalle");
+  const titulo = document.getElementById("modalDetalleTitulo");
+  const body   = document.getElementById("modalDetalleBody");
+  if (!modal || !body || !titulo) return;
+
+  titulo.textContent = "Fotos del caso";
+  body.innerHTML = `
+    <div class="fotos-grid-modal">
+      ${urls.map(u => `<img src="${u}" alt="Foto">`).join("")}
+    </div>
+  `;
+
+  new bootstrap.Modal(modal).show();
 }
 
 // =============================================================
@@ -275,6 +339,7 @@ function initMapa() {
 }
 
 function renderMapa(repFil, accFil) {
+  if (!layerInt) return;
   layerInt.clearLayers();
 
   repFil.forEach(r => {
@@ -349,6 +414,7 @@ function renderMapa(repFil, accFil) {
 // =============================================================
 function renderTablaReportes(repFil) {
   const tbody = document.querySelector("#tablaReportes tbody");
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   top15(repFil).forEach(r => {
@@ -380,6 +446,7 @@ function renderTablaReportes(repFil) {
 
 function renderTablaAcciones(accFil) {
   const tbody = document.querySelector("#tablaAcciones tbody");
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   top15(accFil).forEach(a => {
@@ -408,9 +475,14 @@ function renderTablaAcciones(accFil) {
 //  MODAL DETALLE
 // =============================================================
 function abrirModalDetalle(obj) {
-  const body = document.getElementById("modalDetalleBody");
+  const body   = document.getElementById("modalDetalleBody");
+  const titulo = document.getElementById("modalDetalleTitulo");
+  const modal  = document.getElementById("modalDetalle");
+  if (!body || !titulo || !modal) return;
 
   let fotos = Array.isArray(obj.fotos_url) ? obj.fotos_url : [];
+
+  titulo.textContent = obj.titulo || "Detalle";
 
   body.innerHTML = `
     <div class="modal-detalle-label">ID</div>
@@ -453,7 +525,7 @@ function abrirModalDetalle(obj) {
     }
   `;
 
-  new bootstrap.Modal(document.getElementById("modalDetalle")).show();
+  new bootstrap.Modal(modal).show();
 }
 
 // FIX: botón VER que antes solo funcionaba una vez
@@ -461,7 +533,7 @@ function bindBotonesVer(repFil, accFil) {
   document.querySelectorAll(".btn-ver").forEach(btn => {
     btn.addEventListener("click", () => {
       const tipo = btn.dataset.type;
-      const id = parseInt(btn.dataset.id);
+      const id = parseInt(btn.dataset.id, 10);
 
       let obj = null;
       if (tipo === "rep") obj = repFil.find(r => r.id === id);
@@ -521,11 +593,11 @@ function renderTodo() {
   chartRepCat = chartBarras(document.getElementById("chartReportesCat"), repLabels, repVals, repCols);
   chartAccCat = chartBarras(document.getElementById("chartAccionesCat"), accLabels, accVals, accCols);
 
-  chartLinea = chartLineaDia(document.getElementById("chartLineaDia"), repFil, accFil);
+  chartLinea   = chartLineaDia(document.getElementById("chartLineaDia"), repFil, accFil);
   chartPendSol = chartPastelPendSol(document.getElementById("chartPendSol"), repFil);
 
   chartOperadores = chartAccionesPorOperador(document.getElementById("chartOperadores"), accFil);
-  chartTopCats = chartTopCategoriasAccion(document.getElementById("chartTopCats"), accFil);
+  chartTopCats    = chartTopCategoriasAccion(document.getElementById("chartTopCats"), accFil);
 }
 
 // =============================================================
@@ -538,22 +610,33 @@ async function cargarDatos() {
     supabase.from("categorias_municipales").select("*").order("id")
   ]);
 
-  reportes = rep.data || [];
-  acciones = acc.data || [];
+  reportes  = rep.data || [];
+  acciones  = acc.data || [];
   categorias = cat.data || [];
 
   renderTodo();
 }
 
 // =============================================================
-//  EVENTOS UI
+//  INIT UI
 // =============================================================
-document.getElementById("selectRangoDias").addEventListener("change", e => {
-  rangoDias = parseInt(e.target.value);
-  renderTodo();
-});
+function initUI() {
+  const sel = document.getElementById("selectRangoDias");
+  if (sel) {
+    sel.addEventListener("change", e => {
+      rangoDias = parseInt(e.target.value, 10);
+      renderTodo();
+    });
+  }
+}
 
 // =============================================================
 //  START
 // =============================================================
-cargarDatos();
+document.addEventListener("DOMContentLoaded", () => {
+  const ok = initAuthIntendente();
+  if (!ok) return;        // redirigido al login
+
+  initUI();
+  cargarDatos();
+});
