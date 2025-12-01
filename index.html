@@ -6,7 +6,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>AsuAlerta – Mapa ciudadano</title>
   <meta name="theme-color" content="#d32f2f" />
-
+<link rel="manifest" href="/manifest.json" />
   <!-- Leaflet -->
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -272,5 +272,10 @@
   <script src="ui.js"></script>
   <script type="module" src="clima.js"></script>
   <script type="module" src="home.js"></script>
+   <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js');
+  }
+</script>
 </body>
 </html>
