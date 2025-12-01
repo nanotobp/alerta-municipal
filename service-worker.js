@@ -1,11 +1,11 @@
 // ==============================
-// SERVICE WORKER AsuAlerta v4
+// SERVICE WORKER AsuAlerta v4.1 (fix hard-refresh)
 // ==============================
 
-const CACHE_NAME = "asualerta-v4";  
+const CACHE_NAME = "asualerta-v4.1";
+
+// ⚠️ IMPORTANTE: no precachear index ni JS críticos
 const ASSETS = [
-  "/", 
-  "/index.html",
   "/style.css",
   "/manifest.json",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
@@ -13,7 +13,7 @@ const ASSETS = [
 ];
 
 // ------------------------------
-// INSTALAR SW — precache básico
+// INSTALAR — precache controlado
 // ------------------------------
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -39,20 +39,14 @@ self.addEventListener("activate", (event) => {
 });
 
 // ---------------------------------------
-// REGLA MASTER: HTML siempre = network-first
+// NETWORK FIRST (sin cache) — uso crítico
 // ---------------------------------------
-async function networkFirst(req) {
-  try {
-    const fresh = await fetch(req, { cache: "no-store" });
-    return fresh;
-  } catch (err) {
-    const cache = await caches.match(req);
-    return cache || Response.error();
-  }
+async function networkOnly(req) {
+  return fetch(req, { cache: "no-store" });
 }
 
 // ---------------------------------------
-// ASSETS (CSS, IMG, Leaflet) = cache-first
+// ASSETS — cache-first clásico
 // ---------------------------------------
 async function cacheFirst(req) {
   const cache = await caches.match(req);
@@ -65,33 +59,40 @@ async function cacheFirst(req) {
 }
 
 // ---------------------------------------
-// FILTROS IMPORTANTES
+// FETCH: reglas definitivas
 // ---------------------------------------
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-
   const url = new URL(req.url);
 
-  // No cachear subidas de fotos ni requests POST
+  // Evitar interferir con subidas de fotos y POST
   if (req.method !== "GET") return;
 
-  // No cachear peticiones al Worker backend
+  // Evitar interferencias con tu Worker backend
   if (url.origin.includes("nanotobp.workers.dev")) return;
 
-  // No cachear JS críticos (siempre network exacta)
-  if (url.pathname.endsWith("home.js") ||
-      url.pathname.endsWith("ui.js") ||
-      url.pathname.endsWith("clima.js")) {
-    event.respondWith(networkFirst(req));
+  // 🚫 Nunca cachear INDEX ni rutas raíz
+  if (url.pathname === "/" || url.pathname.endsWith("index.html")) {
+    event.respondWith(networkOnly(req));
     return;
   }
 
-  // HTML SIEMPRE network-first
+  // 🚫 Nunca cachear JS críticos
+  if (
+    url.pathname.endsWith("home.js") ||
+    url.pathname.endsWith("ui.js") ||
+    url.pathname.endsWith("clima.js")
+  ) {
+    event.respondWith(networkOnly(req));
+    return;
+  }
+
+  // HTML → networkOnly siempre (para evitar UI congelada)
   if (req.headers.get("accept")?.includes("text/html")) {
-    event.respondWith(networkFirst(req));
+    event.respondWith(networkOnly(req));
     return;
   }
 
-  // assets = cache-first
+  // assets → cache-first
   event.respondWith(cacheFirst(req));
 });
