@@ -37,7 +37,6 @@ function initAuthIntendente() {
   const rol   = localStorage.getItem("asu_rol");
   const email = localStorage.getItem("asu_email");
 
-  // si no hay token o no es intendente -> al login
   if (!token || rol !== "intendente") {
     window.location.href = "login.html";
     return false;
@@ -70,7 +69,7 @@ function initAuthIntendente() {
 //  HELPERS FECHA / RANGO
 // -------------------------------------------------------------
 function dentroRango(fechaStr) {
-  if (rangoDias === 0) return true; // histórico completo
+  if (rangoDias === 0) return true;
   const f = new Date(fechaStr);
   const hoy = new Date();
   const desde = new Date();
@@ -79,16 +78,14 @@ function dentroRango(fechaStr) {
   return f >= desde && f <= hoy;
 }
 
-// -------------------------------------------------------------
-//  FILTROS PARA TABLAS (top 15)
-// -------------------------------------------------------------
 function top15(arr) {
   return arr.slice(0, 15);
 }
 
-// -------------------------------------------------------------
+// =============================================================
 //  KPIs
-// -------------------------------------------------------------
+// =============================================================
+
 function calcularPorcentajeSolucionados(repFil) {
   const total = repFil.length;
   if (!total) return "--";
@@ -118,33 +115,29 @@ function calcularTiempoPromedioSolucion(repFil, accFil) {
   return (prom / 24).toFixed(1) + " d";
 }
 
-// Nuevo KPI – Operador más eficiente
 function calcularOperadorMasEficiente(accFil) {
   const map = {};
 
   accFil.forEach(a => {
-    const email = a.creado_por_email;
-    if (!email) return;
+    const nombre = a.creado_por_nombre; // FIX
+    if (!nombre) return;
 
-    if (!map[email]) map[email] = { tot: 0, sol: 0 };
-    map[email].tot++;
+    if (!map[nombre]) map[nombre] = { tot: 0, sol: 0 };
+    map[nombre].tot++;
 
-    if (
-      a.observacion?.toLowerCase().includes("solucionado") ||
-      a.estado === "solucionado"
-    ) {
-      map[email].sol++;
+    if (a.observacion?.toLowerCase().includes("solucionado") || a.estado === "solucionado") {
+      map[nombre].sol++;
     }
   });
 
   let mejor = null;
   let mejorEf = 0;
 
-  Object.keys(map).forEach(email => {
-    const ef = map[email].sol / map[email].tot;
+  Object.keys(map).forEach(nombre => {
+    const ef = map[nombre].sol / map[nombre].tot;
     if (ef > mejorEf) {
       mejorEf = ef;
-      mejor = email;
+      mejor = nombre;
     }
   });
 
@@ -152,23 +145,22 @@ function calcularOperadorMasEficiente(accFil) {
   return `${mejor} (${(mejorEf * 100).toFixed(1)}%)`;
 }
 
-// Nuevo KPI – Operador móvil destacado
 function calcularOperadorMovilTop(accFil) {
   const map = {};
 
   accFil.forEach(a => {
-    const email = a.creado_por_email;
-    if (!email) return;
-    map[email] = (map[email] || 0) + 1;
+    const nombre = a.creado_por_nombre; // FIX
+    if (!nombre) return;
+    map[nombre] = (map[nombre] || 0) + 1;
   });
 
   let top = null;
   let max = 0;
 
-  Object.keys(map).forEach(email => {
-    if (map[email] > max) {
-      top = email;
-      max = map[email];
+  Object.keys(map).forEach(nombre => {
+    if (map[nombre] > max) {
+      top = nombre;
+      max = map[nombre];
     }
   });
 
@@ -179,6 +171,7 @@ function calcularOperadorMovilTop(accFil) {
 // =============================================================
 //  CHARTS
 // =============================================================
+
 function destruir(ref) {
   if (ref) ref.destroy();
 }
@@ -189,12 +182,7 @@ function chartBarras(ctx, labels, data, colors) {
     type: "bar",
     data: {
       labels,
-      datasets: [
-        {
-          data,
-          backgroundColor: colors
-        }
-      ]
+      datasets: [{ data, backgroundColor: colors }]
     },
     options: {
       plugins: { legend: { display: false } },
@@ -205,6 +193,7 @@ function chartBarras(ctx, labels, data, colors) {
 
 function chartLineaDia(ctx, repFil, accFil) {
   if (!ctx) return null;
+
   const out = {};
 
   repFil.forEach(r => {
@@ -220,6 +209,7 @@ function chartLineaDia(ctx, repFil, accFil) {
   });
 
   const fechas = Object.keys(out).sort();
+
   return new Chart(ctx, {
     type: "line",
     data: {
@@ -239,10 +229,7 @@ function chartLineaDia(ctx, repFil, accFil) {
         }
       ]
     },
-    options: {
-      plugins: { legend: { position: "bottom" } },
-      responsive: true
-    }
+    options: { plugins: { legend: { position: "bottom" } }, responsive: true }
   });
 }
 
@@ -256,12 +243,7 @@ function chartPastelPendSol(ctx, repFil) {
     type: "doughnut",
     data: {
       labels: ["Pendientes", "Solucionados"],
-      datasets: [
-        {
-          data: [pend, sol],
-          backgroundColor: ["#ff9800", "#4caf50"]
-        }
-      ]
+      datasets: [{ data: [pend, sol], backgroundColor: ["#ff9800", "#4caf50"] }]
     },
     options: { plugins: { legend: { position: "bottom" } } }
   });
@@ -272,9 +254,9 @@ function chartAccionesPorOperador(ctx, accFil) {
 
   const map = {};
   accFil.forEach(a => {
-    const email = a.creado_por_email;
-    if (!email) return;
-    map[email] = (map[email] || 0) + 1;
+    const nombre = a.creado_por_nombre; // FIX
+    if (!nombre) return;
+    map[nombre] = (map[nombre] || 0) + 1;
   });
 
   const labels = Object.keys(map);
@@ -288,10 +270,7 @@ function chartTopCategoriasAccion(ctx, accFil) {
   if (!ctx) return null;
 
   const map = {};
-
-  accFil.forEach(a => {
-    map[a.categoria] = (map[a.categoria] || 0) + 1;
-  });
+  accFil.forEach(a => { map[a.categoria] = (map[a.categoria] || 0) + 1; });
 
   const entries = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
@@ -304,124 +283,18 @@ function chartTopCategoriasAccion(ctx, accFil) {
 }
 
 // =============================================================
-//  VIEWER SIMPLE DE FOTOS (para popups del mapa)
+//  TABLAS
 // =============================================================
-function openFotoViewer(urls, index = 0) {
-  if (!Array.isArray(urls) || !urls.length) return;
-  const modal = document.getElementById("modalDetalle");
-  const titulo = document.getElementById("modalDetalleTitulo");
-  const body   = document.getElementById("modalDetalleBody");
-  if (!modal || !body || !titulo) return;
 
-  titulo.textContent = "Fotos del caso";
-  body.innerHTML = `
-    <div class="fotos-grid-modal">
-      ${urls.map(u => `<img src="${u}" alt="Foto">`).join("")}
-    </div>
-  `;
-
-  new bootstrap.Modal(modal).show();
-}
-
-// =============================================================
-//  MAPA LEAFLET
-// =============================================================
-function initMapa() {
-  if (mapInt) return;
-
-  mapInt = L.map("mapIntendente").setView([-25.282, -57.63], 12);
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19
-  }).addTo(mapInt);
-
-  layerInt = L.layerGroup().addTo(mapInt);
-}
-
-function renderMapa(repFil, accFil) {
-  if (!layerInt) return;
-  layerInt.clearLayers();
-
-  repFil.forEach(r => {
-    const icon = L.divIcon({
-      className: "emoji-marker",
-      html: `<span style="font-size:22px">🔴</span>`
-    });
-
-    const fotos = Array.isArray(r.fotos_url) ? r.fotos_url : [];
-
-    const popup = `
-      <b>Reporte ciudadano</b><br>
-      ${r.barrio || ""}<br>
-      ${r.detalle || ""}
-      ${
-        fotos.length
-          ? `<br><button class="popup-fotos-btn">Ver fotos (${fotos.length})</button>`
-          : ""
-      }
-    `;
-
-    const marker = L.marker([r.lat, r.lng], { icon }).addTo(layerInt).bindPopup(popup);
-
-    if (fotos.length) {
-      marker.on("popupopen", e => {
-        const el = e.popup.getElement();
-        const btn = el.querySelector(".popup-fotos-btn");
-        if (!btn) return;
-        btn.addEventListener("click", () => {
-          openFotoViewer(fotos, 0);
-        });
-      });
-    }
-  });
-
-  accFil.forEach(a => {
-    const icon = L.divIcon({
-      className: "emoji-marker",
-      html: `<span style="font-size:22px">🔵</span>`
-    });
-
-    const fotos = Array.isArray(a.fotos_url) ? a.fotos_url : [];
-
-    const popup = `
-      <b>Acción municipal</b><br>
-      ${a.titulo || ""}<br>
-      ${a.detalle || ""}
-      ${
-        fotos.length
-          ? `<br><button class="popup-fotos-btn">Ver fotos (${fotos.length})</button>`
-          : ""
-      }
-    `;
-
-    const marker = L.marker([a.lat, a.lng], { icon }).addTo(layerInt).bindPopup(popup);
-
-    if (fotos.length) {
-      marker.on("popupopen", e => {
-        const el = e.popup.getElement();
-        const btn = el.querySelector(".popup-fotos-btn");
-        if (!btn) return;
-        btn.addEventListener("click", () => {
-          openFotoViewer(fotos, 0);
-        });
-      });
-    }
-  });
-}
-
-// =============================================================
-//  TABLAS – Render TOP 15
-// =============================================================
 function renderTablaReportes(repFil) {
   const tbody = document.querySelector("#tablaReportes tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
 
   top15(repFil).forEach(r => {
-    const tr = document.createElement("tr");
-
     const fotos = Array.isArray(r.fotos_url) ? r.fotos_url : [];
 
+    const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.id}</td>
       <td>${new Date(r.created_at).toLocaleString("es-PY")}</td>
@@ -432,13 +305,7 @@ function renderTablaReportes(repFil) {
           r.estado === "solucionado" ? "badge-estado-sol" : "badge-estado-pend"
         }">${r.estado}</span>
       </td>
-      <td>
-        ${
-          fotos.length
-            ? `<button class="btn btn-sm btn-primary btn-ver" data-type="rep" data-id="${r.id}">Ver</button>`
-            : ""
-        }
-      </td>
+      <td>${fotos.length ? `<button class="btn btn-sm btn-primary btn-ver" data-type="rep" data-id="${r.id}">Ver</button>` : ""}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -458,23 +325,22 @@ function renderTablaAcciones(accFil) {
       <td>${new Date(a.created_at).toLocaleString("es-PY")}</td>
       <td>${a.titulo || ""}</td>
       <td>${a.categoria || ""}</td>
-      <td>${a.creado_por_email || ""}</td>
-      <td>
-        ${
-          fotos.length
-            ? `<button class="btn btn-sm btn-primary btn-ver" data-type="acc" data-id="${a.id}">Ver</button>`
-            : ""
-        }
-      </td>
+      <td>${a.creado_por_nombre || ""}</td>
+      <td>${fotos.length ? `<button class="btn btn-sm btn-primary btn-ver" data-type="acc" data-id="${a.id}">Ver</button>` : ""}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
+// =============================================================
+//  MODAL VER
+// =============================================================
+
 function abrirModalDetalle(obj) {
   const body   = document.getElementById("modalDetalleBody");
   const titulo = document.getElementById("modalDetalleTitulo");
   const modal  = document.getElementById("modalDetalle");
+
   if (!body || !titulo || !modal) return;
 
   const fotos = Array.isArray(obj.fotos_url) ? obj.fotos_url : [];
@@ -490,29 +356,24 @@ function abrirModalDetalle(obj) {
         <div class="modal-detalle-label">Fecha</div>
         <div class="modal-detalle-valor">${new Date(obj.created_at).toLocaleString("es-PY")}</div>
 
-        ${obj.barrio ? `
-        <div class="modal-detalle-label">Barrio</div>
+        ${obj.barrio ? `<div class="modal-detalle-label">Barrio</div>
         <div class="modal-detalle-valor">${obj.barrio}</div>` : ""}
 
-        ${obj.titulo ? `
-        <div class="modal-detalle-label">Título</div>
+        ${obj.titulo ? `<div class="modal-detalle-label">Título</div>
         <div class="modal-detalle-valor">${obj.titulo}</div>` : ""}
 
         <div class="modal-detalle-label">Detalle</div>
         <div class="modal-detalle-valor">${obj.detalle || "Sin descripción"}</div>
 
-        ${obj.observacion ? `
-        <div class="modal-detalle-label">Observación</div>
+        ${obj.observacion ? `<div class="modal-detalle-label">Observación</div>
         <div class="modal-detalle-valor">${obj.observacion}</div>` : ""}
 
-        ${fotos.length ? `
-        <div class="modal-detalle-label mt-2">Fotos</div>
+        ${fotos.length ? `<div class="modal-detalle-label mt-2">Fotos</div>
         <div class="fotos-grid-modal">
           ${fotos.map(u => `<img src="${u}">`).join("")}
         </div>` : ""}
       </div>
 
-      <!-- Columna derecha con mapa -->
       <div class="col-md-6">
         <div class="modal-detalle-label">Ubicación</div>
         <div id="modalMapa" style="width:100%;height:260px;border-radius:10px;border:1px solid #ddd;"></div>
@@ -521,18 +382,14 @@ function abrirModalDetalle(obj) {
           ? `historial-intendente.html?id=${obj.id}&type=acc`
           : `mapa-historico.html?id=${obj.id}&type=rep`
         }" 
-           target="_blank" 
-           class="btn btn-primary btn-sm mt-2 w-100">
-           Ver en mapa histórico
-        </a>
+        target="_blank" 
+        class="btn btn-primary btn-sm mt-2 w-100">Ver en mapa histórico</a>
       </div>
     </div>
   `;
 
-  const modalInstance = new bootstrap.Modal(modal);
-  modalInstance.show();
+  new bootstrap.Modal(modal).show();
 
-  // Inicializar mapita cuando abra
   setTimeout(() => {
     const m = L.map("modalMapa").setView([obj.lat, obj.lng], 16);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(m);
@@ -546,31 +403,65 @@ function abrirModalDetalle(obj) {
   }, 200);
 }
 
-
-// FIX: botón VER que antes solo funcionaba una vez
 function bindBotonesVer(repFil, accFil) {
   document.querySelectorAll(".btn-ver").forEach(btn => {
     btn.addEventListener("click", () => {
       const tipo = btn.dataset.type;
-      const id = parseInt(btn.dataset.id, 10);
+      const id = Number(btn.dataset.id);
 
-      let obj = null;
-      if (tipo === "rep") obj = repFil.find(r => r.id === id);
-      if (tipo === "acc") obj = accFil.find(a => a.id === id);
+      let obj = (tipo === "rep")
+        ? repFil.find(r => r.id === id)
+        : accFil.find(a => a.id === id);
 
       if (obj) {
-  if (tipo === "rep") obj.tipo = "rep";
-  if (tipo === "acc") obj.tipo = "acc";
-  abrirModalDetalle(obj);
-}
-
+        obj.tipo = tipo;
+        abrirModalDetalle(obj);
+      }
     });
   });
 }
 
 // =============================================================
-//  RENDER GLOBAL
+//  MAPA
 // =============================================================
+
+function initMapa() {
+  if (mapInt) return;
+
+  mapInt = L.map("mapIntendente").setView([-25.282, -57.63], 12);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19
+  }).addTo(mapInt);
+
+  layerInt = L.layerGroup().addTo(mapInt);
+}
+
+function renderMapa(repFil, accFil) {
+  if (!layerInt) return;
+  layerInt.clearLayers();
+
+  repFil.forEach(r => {
+    const marker = L.marker([r.lat, r.lng], {
+      icon: L.divIcon({ className: "emoji-marker", html: "🔴" })
+    });
+
+    marker.addTo(layerInt);
+  });
+
+  accFil.forEach(a => {
+    const marker = L.marker([a.lat, a.lng], {
+      icon: L.divIcon({ className: "emoji-marker", html: "🔵" })
+    });
+
+    marker.addTo(layerInt);
+  });
+}
+
+// =============================================================
+//  RENDER TOTAL
+// =============================================================
+
 function renderTodo() {
   const repFil = reportes.filter(r => dentroRango(r.created_at));
   const accFil = acciones.filter(a => dentroRango(a.created_at));
@@ -593,20 +484,13 @@ function renderTodo() {
   bindBotonesVer(repFil, accFil);
 
   // GRÁFICOS
-  const repCat = {};
-  repFil.forEach(r => { repCat[r.categoria] = (repCat[r.categoria] || 0) + 1; });
+  const rc = {};
+  repFil.forEach(r => rc[r.categoria] = (rc[r.categoria] || 0) + 1);
 
-  const accCat = {};
-  accFil.forEach(a => { accCat[a.categoria] = (accCat[a.categoria] || 0) + 1; });
+  const ac = {};
+  accFil.forEach(a => ac[a.categoria] = (ac[a.categoria] || 0) + 1);
 
-  const repLabels = Object.keys(repCat);
-  const repVals   = Object.values(repCat);
-  const repCols   = repLabels.map(() => "#d32f2f");
-
-  const accLabels = Object.keys(accCat);
-  const accVals   = Object.values(accCat);
-  const accCols   = accLabels.map(() => "#1976d2");
-
+  // destruir previos
   destruir(chartRepCat);
   destruir(chartAccCat);
   destruir(chartLinea);
@@ -615,36 +499,39 @@ function renderTodo() {
   destruir(chartTopCats);
 
   chartRepCat = chartBarras(
-  document.getElementById("chartReportesCat")?.getContext("2d"),
-  repLabels, repVals, repCols
-);
+    document.getElementById("chartReportesCat")?.getContext("2d"),
+    Object.keys(rc),
+    Object.values(rc),
+    Object.keys(rc).map(() => "#d32f2f")
+  );
 
-chartAccCat = chartBarras(
-  document.getElementById("chartAccionesCat")?.getContext("2d"),
-  accLabels, accVals, accCols
-);
+  chartAccCat = chartBarras(
+    document.getElementById("chartAccionesCat")?.getContext("2d"),
+    Object.keys(ac),
+    Object.values(ac),
+    Object.keys(ac).map(() => "#1976d2")
+  );
 
-chartLinea = chartLineaDia(
-  document.getElementById("chartLineaDia")?.getContext("2d"),
-  repFil, accFil
-);
+  chartLinea = chartLineaDia(
+    document.getElementById("chartLineaDia")?.getContext("2d"),
+    repFil,
+    accFil
+  );
 
-chartPendSol = chartPastelPendSol(
-  document.getElementById("chartPendSol")?.getContext("2d"),
-  repFil
-);
+  chartPendSol = chartPastelPendSol(
+    document.getElementById("chartPendSol")?.getContext("2d"),
+    repFil
+  );
 
-chartOperadores = chartAccionesPorOperador(
-  document.getElementById("chartOperadores")?.getContext("2d"),
-  accFil
-);
+  chartOperadores = chartAccionesPorOperador(
+    document.getElementById("chartOperadores")?.getContext("2d"),
+    accFil
+  );
 
-chartTopCats = chartTopCategoriasAccion(
-  document.getElementById("chartTopCats")?.getContext("2d"),
-  accFil
-);
-
-
+  chartTopCats = chartTopCategoriasAccion(
+    document.getElementById("chartTopCats")?.getContext("2d"),
+    accFil
+  );
 }
 
 // =============================================================
@@ -671,7 +558,7 @@ function initUI() {
   const sel = document.getElementById("selectRangoDias");
   if (sel) {
     sel.addEventListener("change", e => {
-      rangoDias = parseInt(e.target.value, 10);
+      rangoDias = Number(e.target.value);
       renderTodo();
     });
   }
@@ -681,9 +568,8 @@ function initUI() {
 //  START
 // =============================================================
 document.addEventListener("DOMContentLoaded", () => {
-  const ok = initAuthIntendente();
-  if (!ok) return;        // redirigido al login
-
+  if (!initAuthIntendente()) return;
   initUI();
   cargarDatos();
 });
+
