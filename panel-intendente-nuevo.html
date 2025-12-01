@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <title>AsuAlerta – Panel intendente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#d32f2f" />
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+
+  <!-- Tabler CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler-flags.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler-payments.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler-vendors.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <!-- Boxicons para iconos simples -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+  >
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- CSS global del proyecto (misma base que ciudad/index) -->
+  <link rel="stylesheet" href="../style.css" />
+
+  <style>
+    body {
+      background: var(--bg, #f5f7fb);
+      color: var(--text, #222);
+    }
+
+    .navbar-asualerta {
+      border-bottom: 1px solid var(--border, #e2e8f0);
+      background: var(--bg-card, #ffffff);
+    }
+
+    .navbar-asualerta .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .navbar-asualerta .navbar-brand img {
+      height: 32px;
+      width: auto;
+    }
+
+    .navbar-asualerta .navbar-text-small {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    .kpi-grid-intendente {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .kpi-card-int {
+      background: var(--bg-card, #ffffff);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid var(--border, #e2e8f0);
+      box-shadow: var(--shadow, 0 2px 6px rgba(15, 23, 42, 0.04));
+    }
+
+    .kpi-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .kpi-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--accent, #d32f2f);
+      line-height: 1.1;
+    }
+
+    .kpi-sub {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    #mapIntendente {
+      width: 100%;
+      height: 360px;
+      border-radius: 14px;
+      border: 2px solid var(--accent, #d32f2f);
+      overflow: hidden;
+    }
+
+    @media (max-width: 768px) {
+      #mapIntendente {
+        height: 280px;
+      }
+    }
+
+    .tabla-wrapper {
+      max-height: 520px;
+      overflow: auto;
+    }
+
+    .badge-estado-pend {
+      background: #fff7ed;
+      color: #c05621;
+    }
+
+    .badge-estado-sol {
+      background: #ecfdf3;
+      color: #15803d;
+    }
+
+    .btn-ver {
+      padding: 4px 10px;
+      font-size: 0.78rem;
+    }
+
+    .card-chart {
+      border-radius: 12px;
+      border: 1px solid var(--border, #e2e8f0);
+      background: var(--bg-card, #ffffff);
+      box-shadow: var(--shadow, 0 2px 6px rgba(15, 23, 42, 0.04));
+    }
+
+    .card-chart-header {
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 20px 10px;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+
+    .cursor-pointer {
+      cursor: pointer;
+    }
+
+    /* Modal detalle */
+    .modal-detalle-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-top: 6px;
+    }
+
+    .modal-detalle-valor {
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .fotos-grid-modal {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .fotos-grid-modal img {
+      width: 100%;
+      border-radius: 8px;
+      object-fit: cover;
+      max-height: 140px;
+    }
+
+    .weather-mini {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.85rem;
+      color: #475569;
+    }
+
+    .weather-mini i {
+      font-size: 1.1rem;
+    }
+
+    .fecha-mini {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- NAVBAR SUPERIOR -->
+  <header class="navbar navbar-expand-md navbar-light navbar-asualerta">
+    <div class="container-fluid">
+      <a href="#" class="navbar-brand">
+        <span class="navbar-brand-image">
+          <img src="https://codigocenter.com/logo/muni.png" alt="Municipalidad de Asunción">
+        </span>
+        <span class="d-none d-sm-flex flex-column">
+          <span class="fw-bold">AsuAlerta</span>
+          <span class="navbar-text-small">Panel Intendente – Solo lectura</span>
+        </span>
+      </a>
+
+      <div class="d-flex align-items-center ms-auto gap-3">
+        <div class="text-end d-none d-md-block">
+          <div id="fechaHeaderInt" class="fecha-mini"></div>
+          <div id="weatherMiniInt" class="weather-mini">
+            <i class="bx bx-sun"></i>
+            <span id="weatherTempInt">--°C</span>
+          </div>
+        </div>
+
+        <div class="dropdown">
+          <a href="#" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" id="userDropdownInt">
+            <i class="bx bx-user-circle me-1"></i>
+            <span id="userEmailShort">Intendente</span>
+          </a>
+          <div class="dropdown-menu dropdown-menu-end">
+            <span class="dropdown-item-text small" id="userEmailFull"></span>
+            <div class="dropdown-divider"></div>
+            <a href="login.html" class="dropdown-item" id="btnCerrarSesion">
+              <i class="bx bx-log-out me-1"></i> Cerrar sesión
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div class="page">
+    <div class="page-body">
+      <div class="container-fluid">
+
+        <!-- MAPA ARRIBA -->
+        <div class="row my-3">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">
+                  🗺️ Mapa de reportes y acciones municipales
+                </h3>
+                <div class="card-actions">
+                  <select id="selectRangoDias" class="form-select form-select-sm">
+                    <option value="7">Últimos 7 días</option>
+                    <option value="30">Últimos 30 días</option>
+                    <option value="90">Últimos 90 días</option>
+                    <option value="365">Últimos 12 meses</option>
+                    <option value="0">Todo el histórico</option>
+                  </select>
+                </div>
+              </div>
+              <div class="card-body">
+                <div id="mapIntendente"></div>
+                <div class="small text-muted mt-1">
+                  Emoji rojo = reportes ciudadanos · Emoji azul = acciones municipales
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="row mb-3">
+          <div class="col-12">
+            <div class="kpi-grid-intendente">
+              <div class="kpi-card-int">
+                <div class="kpi-label"><i class="bx bx-message-rounded-detail"></i> Reportes ciudadanos</div>
+                <div id="kpiReportes" class="kpi-value">--</div>
+                <div class="kpi-sub">Total en el rango seleccionado</div>
+              </div>
+              <div class="kpi-card-int">
+                <div class="kpi-label"><i class="bx bx-building-house"></i> Acciones municipales</div>
+                <div id="kpiAcciones" class="kpi-value">--</div>
+                <div class="kpi-sub">Intervenciones registradas</div>
+              </div>
+              <div class="kpi-card-int">
+                <div class="kpi-label"><i class="bx bx-check-circle"></i> % reportes solucionados</div>
+                <div id="kpiSolucion" class="kpi-value">--</div>
+                <div class="kpi-sub">Respecto al total de reportes</div>
+              </div>
+              <div class="kpi-card-int">
+                <div class="kpi-label"><i class="bx bx-time-five"></i> Tiempo promedio</div>
+                <div id="kpiTiempo" class="kpi-value">--</div>
+                <div class="kpi-sub">Desde el reporte hasta la acción</div>
+              </div>
+              <div class="kpi-card-int">
+                <div class="kpi-label"><i class="bx bx-star"></i> Operador más eficiente</div>
+                <div id="kpiOperadorEficiente" class="kpi-value">--</div>
+                <div class="kpi-sub">Mayor % de casos solucionados</div>
+              </div>
+              <div class="kpi-card-int">
+                <div class="kpi-label"><i class="bx bx-run"></i> Operador móvil destacado</div>
+                <div id="kpiOperadorMovil" class="kpi-value">--</div>
+                <div class="kpi-sub">Más acciones registradas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GRÁFICOS -->
+        <div class="row mb-3">
+          <div class="col-md-6 mb-3">
+            <div class="card card-chart">
+              <div class="card-body">
+                <div class="card-chart-header">Reportes por categoría</div>
+                <canvas id="chartReportesCat" height="220"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="card card-chart">
+              <div class="card-body">
+                <div class="card-chart-header">Acciones por categoría</div>
+                <canvas id="chartAccionesCat" height="220"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6 mb-3">
+            <div class="card card-chart">
+              <div class="card-body">
+                <div class="card-chart-header">Reportes vs acciones por día</div>
+                <canvas id="chartLineaDia" height="220"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="card card-chart">
+              <div class="card-body">
+                <div class="card-chart-header">Pendientes vs solucionados</div>
+                <canvas id="chartPendSol" height="220"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-6 mb-3">
+            <div class="card card-chart">
+              <div class="card-body">
+                <div class="card-chart-header">Acciones por operador móvil</div>
+                <canvas id="chartOperadores" height="220"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="card card-chart">
+              <div class="card-body">
+                <div class="card-chart-header">Top categorías de acción</div>
+                <canvas id="chartTopCats" height="220"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLAS (solo primeras 15 filas) -->
+        <div class="row mb-4">
+          <!-- Reportes -->
+          <div class="col-12 col-xl-6 mb-3">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Reportes ciudadanos (top 15)</h3>
+              </div>
+              <div class="tabla-wrapper">
+                <table class="table table-sm table-hover table-vcenter" id="tablaReportes">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Fecha</th>
+                      <th>Barrio</th>
+                      <th>Categoría</th>
+                      <th>Estado</th>
+                      <th class="w-1"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- se llena por JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="col-12 col-xl-6 mb-3">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Acciones municipales (top 15)</h3>
+              </div>
+              <div class="tabla-wrapper">
+                <table class="table table-sm table-hover table-vcenter" id="tablaAcciones">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Fecha</th>
+                      <th>Título</th>
+                      <th>Categoría</th>
+                      <th>Operador</th>
+                      <th class="w-1"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- se llena por JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- container-fluid -->
+    </div> <!-- page-body -->
+
+    <footer class="footer footer-transparent border-top">
+      <div class="container-fluid">
+        <div class="row text-center align-items-center flex-row-reverse">
+          <div class="col-12">
+            <p class="mb-0 text-secondary small">
+              © AsuAlerta 2025 – Panel intendente. Datos sólo lectura, alimentados por el sistema municipal.
+            </p>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div><!-- page -->
+  <!-- MODAL DETALLE (reporte / acción) -->
+  <div class="modal modal-blur fade" id="modalDetalle" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <button type="button" class="btn-close position-absolute end-0 mt-3 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-header border-0 pb-0">
+          <h3 class="modal-title" id="modalDetalleTitulo">Detalle</h3>
+        </div>
+        <div class="modal-body">
+          <div id="modalDetalleBody">
+            <!-- se rellena por JS -->
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL INSTALACIÓN PWA -->
+  <div id="installModal" class="pwa-modal">
+    <div class="pwa-modal-content">
+      <button id="closeInstallModal" class="pwa-close" type="button">×</button>
+
+      <h2>Instalá AsuAlerta 📲</h2>
+      <p>Accedé más rápido al panel desde tu pantalla de inicio.</p>
+
+      <h3>Android</h3>
+      <p>Apretá el botón <b>⋮</b> (arriba a la derecha) y elegí <b>“Agregar a pantalla principal”</b>.</p>
+
+      <h3>iPhone / iPad</h3>
+      <p>Tocá el botón <b>Compartir</b> y luego <b>“Agregar a inicio”</b>.</p>
+
+      <label class="no-show-label">
+        <input type="checkbox" id="dontShowInstall">
+        No volver a mostrar
+      </label>
+    </div>
+  </div>
+
+</div> <!-- /page -->
+
+<!-- LIBRERÍAS JS -->
+<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/js/tabler.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- LÓGICA PRINCIPAL DEL PANEL (todo va acá) -->
+<script type="module" src="panel-intendente.js"></script>
+
+<!-- UTILIDADES LOCALES: fecha, clima mini e instalación PWA -->
+<script>
+  // Fecha header mini
+  function actualizarFechaInt() {
+    const el = document.getElementById("fechaHeaderInt");
+    if (!el) return;
+
+    const dias = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+    const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+    const f = new Date();
+    const txt = dias[f.getDay()] + " " + f.getDate() + " " + meses[f.getMonth()];
+    el.textContent = txt;
+  }
+
+  // Clima mini (similar a otros paneles)
+  async function actualizarClimaMiniInt() {
+    const tempEl = document.getElementById("weatherTempInt");
+    const iconWrap = document.getElementById("weatherMiniInt");
+    if (!tempEl || !iconWrap) return;
+
+    try {
+      const resp = await fetch(
+        "https://api.open-meteo.com/v1/forecast?latitude=-25.28&longitude=-57.64&current_weather=true"
+      );
+      const data = await resp.json();
+      const t = data.current_weather?.temperature;
+      const code = data.current_weather?.weathercode;
+
+      if (typeof t === "number") {
+        tempEl.textContent = t + "°C";
+      }
+
+      let iconClass = "bx bx-sun";
+      if (code >= 1 && code <= 3) iconClass = "bx bx-cloud";
+      if (code >= 45 && code <= 48) iconClass = "bx bx-wind";
+      if (code >= 51 && code <= 67) iconClass = "bx bx-cloud-drizzle";
+      if (code >= 71 && code <= 77) iconClass = "bx bx-cloud-snow";
+      if (code >= 80 && code <= 82) iconClass = "bx bx-cloud-rain";
+      if (code >= 95) iconClass = "bx bx-bolt-circle";
+
+      const icon = iconWrap.querySelector("i");
+      if (icon) icon.className = iconClass;
+    } catch (e) {
+      console.warn("Error clima mini intendente", e);
+    }
+  }
+
+  // PWA install modal (primeras 2 veces o hasta "no volver a mostrar")
+  function initPwaInstallModal() {
+    const modal = document.getElementById("installModal");
+    const closeBtn = document.getElementById("closeInstallModal");
+    const dontShow = document.getElementById("dontShowInstall");
+    if (!modal || !closeBtn || !dontShow) return;
+
+    // ya está instalado en modo standalone?
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true;
+
+    if (isStandalone) return;
+
+    const hideFlag = localStorage.getItem("asu_pwa_hide_int");
+    if (hideFlag === "1") return;
+
+    let visitas = parseInt(localStorage.getItem("asu_pwa_int_visits") || "0", 10);
+    visitas += 1;
+    localStorage.setItem("asu_pwa_int_visits", String(visitas));
+
+    // Mostrar solo primeras 2 veces, salvo que marque "no volver a mostrar"
+    if (visitas <= 2) {
+      modal.style.display = "flex";
+    }
+
+    closeBtn.addEventListener("click", () => {
+      modal.style.display = "none";
+      if (dontShow.checked) {
+        localStorage.setItem("asu_pwa_hide_int", "1");
+      }
+    });
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.style.display = "none";
+        if (dontShow.checked) {
+          localStorage.setItem("asu_pwa_hide_int", "1");
+        }
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    actualizarFechaInt();
+    actualizarClimaMiniInt();
+    initPwaInstallModal();
+  });
+</script>
+
+<style>
+  /* Modal instalación PWA */
+  .pwa-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+  .pwa-modal-content {
+    position: relative;
+    background: #ffffff;
+    max-width: 360px;
+    width: 90%;
+    padding: 20px 18px 18px;
+    border-radius: 14px;
+    text-align: left;
+    box-shadow: 0 10px 30px rgba(15,23,42,.35);
+    font-size: 0.92rem;
+  }
+  .pwa-modal-content h2 {
+    font-size: 1.15rem;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  .pwa-modal-content h3 {
+    margin-top: 10px;
+    margin-bottom: 4px;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .pwa-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .no-show-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 0.86rem;
+    color: #475569;
+  }
+</style>
+
+</body>
+</html>
+
+  

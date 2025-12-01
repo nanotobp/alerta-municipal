@@ -3,658 +3,531 @@
 <head>
   <meta charset="UTF-8" />
   <title>AsuAlerta – Panel intendente</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="theme-color" content="#d32f2f" />
-  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Tabler CSS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler.min.css"
-    rel="stylesheet"
-  />
-  <link
-    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler-flags.min.css"
-    rel="stylesheet"
-  />
-  <link
-    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler-payments.min.css"
-    rel="stylesheet"
-  />
-  <link
-    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/css/tabler-vendors.min.css"
-    rel="stylesheet"
-  />
+  <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-flags.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-payments.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-vendors.min.css" rel="stylesheet" />
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
 
-  <!-- Boxicons para iconos simples -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
-  >
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- CSS global del proyecto (misma base que ciudad/index) -->
-  <link rel="stylesheet" href="../style.css" />
+  <!-- Leaflet + MarkerCluster -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
 
   <style>
-    body {
-      background: var(--bg, #f5f7fb);
-      color: var(--text, #222);
-    }
+    .category-dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;}
+    .foto-thumb{width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:4px;cursor:pointer;border:1px solid rgba(0,0,0,0.06);}
+    .stat-label{font-size:0.8rem;text-transform:uppercase;letter-spacing:.04em;color:rgba(0,0,0,.6);}
+    [data-bs-theme="dark"] .stat-label{color:rgba(255,255,255,.6);}
+    .stat-number{font-size:1.7rem;font-weight:600;}
+    .stat-caption{font-size:0.8rem;color:rgba(0,0,0,.55);}
+    [data-bs-theme="dark"] .stat-caption{color:rgba(255,255,255,.55);}
+    .badge-pill{border-radius:999px;}
+    .timeline{border-left:2px solid rgba(0,0,0,0.1);padding-left:16px;margin-left:4px;}
+    .timeline-item{position:relative;margin-bottom:18px;}
+    .timeline-point{width:12px;height:12px;border-radius:50%;position:absolute;left:-7px;top:4px;background:#206bc4;}
+    .timeline-event{padding-left:4px;}
+    #miniMapaDetalle{width:100%;height:200px;border-radius:8px;border:1px solid rgba(0,0,0,.1);overflow:hidden;}
+    .acciones-fotos img{width:52px;height:52px;object-fit:cover;border-radius:6px;margin-right:4px;margin-top:4px;border:1px solid rgba(0,0,0,0.08);cursor:pointer;}
+    .op-kpi-number{font-size:1.8rem;font-weight:700;line-height:1.1;}
+    .op-kpi-label{font-size:0.78rem;letter-spacing:.04em;color:rgba(0,0,0,.6);}
 
-    .navbar-asualerta {
-      border-bottom: 1px solid var(--border, #e2e8f0);
-      background: var(--bg-card, #ffffff);
-    }
-
-    .navbar-asualerta .navbar-brand {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .navbar-asualerta .navbar-brand img {
-      height: 32px;
-      width: auto;
-    }
-
-    .navbar-asualerta .navbar-text-small {
-      font-size: 0.8rem;
-      opacity: 0.7;
-    }
-
-    .kpi-grid-intendente {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-    }
-
-    .kpi-card-int {
-      background: var(--bg-card, #ffffff);
-      border-radius: 12px;
-      padding: 12px;
-      border: 1px solid var(--border, #e2e8f0);
-      box-shadow: var(--shadow, 0 2px 6px rgba(15, 23, 42, 0.04));
-    }
-
-    .kpi-label {
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #64748b;
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .kpi-value {
-      font-size: 1.6rem;
-      font-weight: 800;
-      color: var(--accent, #d32f2f);
-      line-height: 1.1;
-    }
-
-    .kpi-sub {
-      font-size: 0.75rem;
-      color: #94a3b8;
-      margin-top: 4px;
-    }
-
-    #mapIntendente {
-      width: 100%;
-      height: 360px;
-      border-radius: 14px;
-      border: 2px solid var(--accent, #d32f2f);
-      overflow: hidden;
-    }
-
-    @media (max-width: 768px) {
-      #mapIntendente {
-        height: 280px;
-      }
-    }
-
-    .tabla-wrapper {
-      max-height: 520px;
-      overflow: auto;
-    }
-
-    .badge-estado-pend {
-      background: #fff7ed;
-      color: #c05621;
-    }
-
-    .badge-estado-sol {
-      background: #ecfdf3;
-      color: #15803d;
-    }
-
-    .btn-ver {
-      padding: 4px 10px;
-      font-size: 0.78rem;
-    }
-
-    .card-chart {
-      border-radius: 12px;
-      border: 1px solid var(--border, #e2e8f0);
-      background: var(--bg-card, #ffffff);
-      box-shadow: var(--shadow, 0 2px 6px rgba(15, 23, 42, 0.04));
-    }
-
-    .card-chart-header {
-      font-size: 0.9rem;
-      font-weight: 600;
-      padding-bottom: 4px;
-      margin-bottom: 6px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 20px 10px;
-      font-size: 0.9rem;
-      color: #94a3b8;
-    }
-
-    .cursor-pointer {
-      cursor: pointer;
-    }
-
-    /* Modal detalle */
-    .modal-detalle-label {
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      color: #64748b;
-      margin-top: 6px;
-    }
-
-    .modal-detalle-valor {
-      font-size: 0.9rem;
-      margin-bottom: 4px;
-    }
-
-    .fotos-grid-modal {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .fotos-grid-modal img {
-      width: 100%;
-      border-radius: 8px;
-      object-fit: cover;
-      max-height: 140px;
-    }
-
-    .weather-mini {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.85rem;
-      color: #475569;
-    }
-
-    .weather-mini i {
-      font-size: 1.1rem;
-    }
-
-    .fecha-mini {
-      font-size: 0.8rem;
-      color: #64748b;
+    /* Fix para Leaflet dentro de Tabler */
+    .leaflet-container{z-index:1;}
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large{
+      background-color:rgba(0,0,0,0.25)!important;
+      color:white!important;
     }
   </style>
 </head>
 
 <body>
-  <!-- NAVBAR SUPERIOR -->
-  <header class="navbar navbar-expand-md navbar-light navbar-asualerta">
-    <div class="container-fluid">
-      <a href="#" class="navbar-brand">
-        <span class="navbar-brand-image">
-          <img src="https://codigocenter.com/logo/muni.png" alt="Municipalidad de Asunción">
-        </span>
-        <span class="d-none d-sm-flex flex-column">
-          <span class="fw-bold">AsuAlerta</span>
-          <span class="navbar-text-small">Panel Intendente – Solo lectura</span>
-        </span>
-      </a>
-
-      <div class="d-flex align-items-center ms-auto gap-3">
-        <div class="text-end d-none d-md-block">
-          <div id="fechaHeaderInt" class="fecha-mini"></div>
-          <div id="weatherMiniInt" class="weather-mini">
-            <i class="bx bx-sun"></i>
-            <span id="weatherTempInt">--°C</span>
-          </div>
-        </div>
-
-        <div class="dropdown">
-          <a href="#" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" id="userDropdownInt">
-            <i class="bx bx-user-circle me-1"></i>
-            <span id="userEmailShort">Intendente</span>
-          </a>
-          <div class="dropdown-menu dropdown-menu-end">
-            <span class="dropdown-item-text small" id="userEmailFull"></span>
-            <div class="dropdown-divider"></div>
-            <a href="login.html" class="dropdown-item" id="btnCerrarSesion">
-              <i class="bx bx-log-out me-1"></i> Cerrar sesión
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- CONTENIDO PRINCIPAL -->
   <div class="page">
-    <div class="page-body">
-      <div class="container-fluid">
+    
+    <!-- NAVBAR -->
+    <header class="navbar navbar-expand-md navbar-light d-print-none">
+      <div class="container-xl">
 
-        <!-- MAPA ARRIBA -->
-        <div class="row my-3">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">
-                  🗺️ Mapa de reportes y acciones municipales
-                </h3>
-                <div class="card-actions">
-                  <select id="selectRangoDias" class="form-select form-select-sm">
-                    <option value="7">Últimos 7 días</option>
-                    <option value="30">Últimos 30 días</option>
-                    <option value="90">Últimos 90 días</option>
-                    <option value="365">Últimos 12 meses</option>
-                    <option value="0">Todo el histórico</option>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+          <span class="navbar-brand-text">AsuAlerta – Intendente</span>
+        </h1>
+
+        <div class="navbar-nav flex-row order-md-last">
+
+          <button class="nav-link px-3" id="themeToggle" type="button" title="Cambiar tema">🌙</button>
+
+          <button id="btnFullscreen" class="btn btn-outline-secondary btn-icon" title="Pantalla completa">
+            <i class="ti ti-maximize"></i>
+          </button>
+
+          <div class="nav-item dropdown ms-2">
+            <a class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" href="#">
+              <span class="avatar avatar-sm">IN</span>
+              <div class="d-none d-xl-block ps-2">
+                <div id="intNombreLabel">Intendente</div>
+                <div class="mt-1 small text-muted" id="intDeptoLabel">Vista global</div>
+              </div>
+            </a>
+
+            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              <a id="btnLogout" href="javascript:void(0)" class="dropdown-item">Cerrar sesión</a>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="collapse navbar-collapse" id="navbar-menu"></div>
+      </div>
+    </header>
+
+    <!-- CONTENIDO -->
+    <div class="page-wrapper">
+      <div class="page-body">
+        <div class="container-xl">
+
+          <div class="page-header d-print-none">
+            <div class="row align-items-center">
+              <div class="col">
+                <h2 class="page-title">Panel de intendente municipal</h2>
+                <div class="text-muted mt-1">
+                  Vista global de reportes ciudadanos y desempeño municipal.<br>
+                  Por defecto se muestran solo los últimos 30 días.
+                </div>
+
+                <!-- SELECTOR 7 / 30 / GLOBAL -->
+                <div class="alert alert-info mt-2 mb-1 py-2">
+                  <div class="row mb-3">
+                    <div class="col-auto">
+                      <div class="btn-group" id="selectorTiempo">
+                        <button class="btn btn-outline-primary active" data-dia="30">30 días</button>
+                        <button class="btn btn-outline-primary" data-dia="7">7 días</button>
+                        <button class="btn btn-outline-primary" data-dia="global">Global</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <b>Modo actual:</b> últimos 30 días ·
+                  <span class="small text-muted">Use los botones para ver histórico completo.</span>
+                </div>
+              </div>
+
+              <!-- BOTONES HISTÓRICOS -->
+              <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                  <button id="btnCsv30" class="btn btn-outline-secondary">⬇️ CSV (30 días)</button>
+
+                  <div class="btn-group">
+                    <button id="btnVerHistorico" class="btn btn-primary">Ver histórico completo</button>
+                    <button id="btnCsvHistorico" class="btn btn-outline-success">⬇️ CSV histórico</button>
+                    <button id="btnMapaHistorico" class="btn btn-secondary">Mapa histórico</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- =============================== -->
+          <!-- 🔥 NUEVOS KPIs DE EQUIPOS -->
+          <!-- =============================== -->
+
+          <div class="row row-deck row-cards mb-4">
+
+            <!-- Mejor operador móvil -->
+            <div class="col-md-6 col-lg-3">
+              <div class="card"><div class="card-body">
+                <div class="op-kpi-label">Mejor operador móvil</div>
+                <div class="op-kpi-number" id="kpi_top_movil">-</div>
+                <div class="text-muted small" id="kpi_top_movil_det">-</div>
+              </div></div>
+            </div>
+
+            <!-- Más acciones móviles -->
+            <div class="col-md-6 col-lg-3">
+              <div class="card"><div class="card-body">
+                <div class="op-kpi-label">Acciones móviles (TOP)</div>
+                <div class="op-kpi-number" id="kpi_acciones_movil">-</div>
+                <div class="text-muted small" id="kpi_acciones_movil_det">-</div>
+              </div></div>
+            </div>
+
+            <!-- Más reportes resueltos -->
+            <div class="col-md-6 col-lg-3">
+              <div class="card"><div class="card-body">
+                <div class="op-kpi-label">Más reportes resueltos</div>
+                <div class="op-kpi-number" id="kpi_resuelve_mas">-</div>
+                <div class="text-muted small" id="kpi_resuelve_mas_det">-</div>
+              </div></div>
+            </div>
+
+            <!-- Más rápido -->
+            <div class="col-md-6 col-lg-3">
+              <div class="card"><div class="card-body">
+                <div class="op-kpi-label">Más rápido (promedio)</div>
+                <div class="op-kpi-number" id="kpi_mas_rapido">-</div>
+                <div class="text-muted small" id="kpi_mas_rapido_det">-</div>
+              </div></div>
+            </div>
+
+          </div>
+
+          <!-- =============================== -->
+          <!-- EQUIPO MUNICIPAL MÁS PRODUCTIVO -->
+          <!-- =============================== -->
+          <div class="row row-cards mb-4">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-status-top bg-blue"></div>
+                <div class="card-header">
+                  <h3 class="card-title">Equipo municipal más productivo (últimos 30 días)</h3>
+                </div>
+                <div class="card-body">
+                  <div id="kpi_equipo_productivo" class="fw-bold fs-3">-</div>
+                  <div class="text-muted small" id="kpi_equipo_productivo_det">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- =============================== -->
+          <!-- KPIs GLOBALES HISTÓRICOS -->
+          <!-- =============================== -->
+          <div class="row row-deck row-cards mb-3">
+
+            <div class="col-sm-6 col-lg-3">
+              <div class="card"><div class="card-body">
+                <div class="stat-label">Total reportes</div>
+                <div class="stat-number" id="stat_total_global">0</div>
+                <div class="stat-caption">Histórico completo.</div>
+              </div></div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+              <div class="card"><div class="card-body">
+                <div class="stat-label">Pendientes</div>
+                <div class="stat-number text-warning" id="stat_pendientes_global">0</div>
+                <div class="stat-caption">En espera de solución.</div>
+              </div></div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+              <div class="card"><div class="card-body">
+                <div class="stat-label">Solucionados</div>
+                <div class="stat-number text-success" id="stat_solucionados_global">0</div>
+                <div class="stat-caption">Casos resueltos.</div>
+              </div></div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+              <div class="card"><div class="card-body">
+                <div class="stat-label">Tiempo promedio</div>
+                <div class="stat-number" id="stat_tiempo_global">-</div>
+                <div class="stat-caption">Horas promedio de resolución.</div>
+              </div></div>
+            </div>
+
+            <!-- ESTE BLOQUE ESTABA SUELTO — YA ESTÁ REPARADO -->
+            <div class="col-sm-6 col-lg-3 mt-3">
+              <div class="card"><div class="card-body">
+                <div class="stat-label">Eficiencia global</div>
+                <div class="stat-number" id="stat_eficiencia_global">-</div>
+                <div class="stat-caption">% solucionados del total histórico.</div>
+              </div></div>
+            </div>
+
+          </div>
+          <!-- =============================== -->
+          <!-- KPIS 30 DÍAS ORIGINALES         -->
+          <!-- =============================== -->
+          <div class="row row-deck row-cards mb-4">
+
+            <div class="col-sm-6 col-lg-4">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Reportes últimos 30 días</div>
+                  <div class="stat-number" id="stat_total_30">0</div>
+                  <div class="stat-caption">Carga ciudadana reciente.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-4">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Solucionados últimos 30 días</div>
+                  <div class="stat-number text-success" id="stat_sol_30">0</div>
+                  <div class="stat-caption">Casos cerrados en ese período.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-4">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Pendientes &gt; 48h (30 días)</div>
+                  <div class="stat-number text-danger" id="stat_atrasados_30">0</div>
+                  <div class="stat-caption">Casos críticos a priorizar.</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+            <!-- =============================== -->
+<!-- 🔥 KPIS AVANZADOS – DASHBOARD   -->
+<!-- =============================== -->
+<div id="kpiAvanzadosContainer" class="mb-4">
+  <!-- panel-intendente-advanced.js va a renderizar aquí -->
+</div>
+
+          <!-- =============================== -->
+          <!-- GRÁFICOS 30 DÍAS               -->
+          <!-- =============================== -->
+          <div class="row row-deck row-cards mb-4">
+            
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Reportes por categoría (30 días)</div>
+                </div>
+                <div class="card-body">
+                  <canvas id="chartCat30" height="140"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Reportes por departamento (30 días)</div>
+                </div>
+                <div class="card-body">
+                  <canvas id="chartDepto30" height="140"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Pendientes vs solucionados (30 días)</div>
+                </div>
+                <div class="card-body">
+                  <canvas id="chartEstado30" height="140"></canvas>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- =============================== -->
+          <!-- MAPA 30 DÍAS                    -->
+          <!-- =============================== -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <div class="card-title">Mapa últimos 30 días (cluster por categoría)</div>
+            </div>
+            <div class="card-body p-0">
+              <div id="map30" style="height:400px;width:100%;"></div>
+            </div>
+          </div>
+
+          <!-- ================================ -->
+          <!-- TABLA DE REPORTES 30 DÍAS        -->
+          <!-- ================================ -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <div class="card-title">
+                Reportes últimos 30 días
+                <span class="text-muted small ms-2">(Atajos: R refresca, F buscador)</span>
+              </div>
+              <div class="card-actions">
+                <button id="btnRefrescar" class="btn btn-icon" type="button" title="Refrescar (R)">⟳</button>
+              </div>
+            </div>
+
+            <div class="card-body border-bottom py-3">
+
+              <div class="row g-2">
+
+                <div class="col-md-3">
+                  <div class="form-label">Buscar</div>
+                  <input type="text" class="form-control" id="buscar" placeholder="Detalle, barrio o ciudadano..." />
+                </div>
+
+                <div class="col-md-3">
+                  <div class="form-label">Estado</div>
+                  <select class="form-select" id="filtroEstado">
+                    <option value="">Todos</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="solucionado">Solucionado</option>
                   </select>
                 </div>
-              </div>
-              <div class="card-body">
-                <div id="mapIntendente"></div>
-                <div class="small text-muted mt-1">
-                  Emoji rojo = reportes ciudadanos · Emoji azul = acciones municipales
+
+                <div class="col-md-3">
+                  <div class="form-label">Categoría</div>
+                  <select class="form-select" id="filtroCategoria">
+                    <option value="">Todas</option>
+                    <option value="bache">Bache</option>
+                    <option value="basural">Basural</option>
+                    <option value="arbol_caido">Árbol caído</option>
+                    <option value="cano_roto">Caño roto</option>
+                  </select>
                 </div>
+
+                <div class="col-md-3">
+                  <div class="form-label">Departamento</div>
+                  <select class="form-select" id="filtroDepto">
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+
+                <div class="col-md-3 mt-2">
+                  <div class="form-label">Fecha (desde)</div>
+                  <input type="date" class="form-control" id="fchDesde">
+                </div>
+
+                <div class="col-md-3 mt-2">
+                  <div class="form-label">Fecha (hasta)</div>
+                  <input type="date" class="form-control" id="fchHasta">
+                </div>
+
               </div>
+
             </div>
+
+            <!-- TABLA -->
+            <div class="table-responsive">
+              <table class="table table-vcenter card-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Departamento</th>
+                    <th>Categoría</th>
+                    <th>Barrio</th>
+                    <th>Detalle</th>
+                    <th>Ciudadano</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th class="text-end">Acciones</th>
+                  </tr>
+                </thead>
+
+                <tbody id="tablaReportesInt">
+                  <tr><td colspan="9" class="text-center py-4">Cargando...</td></tr>
+                </tbody>
+
+              </table>
+            </div>
+
+            <div id="paginacionTabla" class="card-footer d-flex align-items-center"></div>
+
+          </div> <!-- cierre card tabla -->
+        </div> <!-- /container-xl -->
+      </div> <!-- /page-body -->
+    </div> <!-- /page-wrapper -->
+  </div> <!-- /page -->
+
+  <!-- ========================= -->
+  <!-- OFFCANVAS DETALLE REPORTE -->
+  <!-- ========================= -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="detalleReportePanel">
+    <div class="offcanvas-header">
+      <div>
+        <h3 class="offcanvas-title" id="detalleTitulo">Detalle de reporte</h3>
+        <div class="text-muted small" id="detalleSubtitulo"></div>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+    </div>
+
+    <div class="offcanvas-body">
+
+      <div class="mb-3">
+        <span id="detalleBadgeEstado" class="badge badge-pill bg-warning me-2">Pendiente</span>
+        <span class="badge badge-pill bg-secondary" id="detalleCategoriaChip">CATEGORÍA</span>
+        <span class="badge badge-pill bg-info ms-2" id="detalleDeptoChip">DEPTO</span>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Datos del ciudadano</div>
+        <div id="detalleCiudadanoNombre" class="fw-semibold">-</div>
+        <div id="detalleCiudadanoCelular" class="text-muted small">-</div>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Descripción del problema</div>
+        <div id="detalleTextoReporte">-</div>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Fechas del proceso</div>
+        <div id="detalleFechas"></div>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Resumen categoría / barrio (30 días)</div>
+        <div id="detalleMiniDashboard" class="small"></div>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Ubicación en mapa</div>
+        <div id="miniMapaDetalle"></div>
+
+        <div class="mt-2 d-flex justify-content-between">
+          <div id="alertaDuplicados" class="alert alert-warning d-none mb-0 me-2 py-1 px-2 flex-grow-1">
+            ⚠️ Hay reportes cercanos a esta ubicación.
+            <div id="listaDuplicados" class="small mt-1"></div>
           </div>
+
+          <button id="btnAbrirEnMapa" class="btn btn-outline-primary btn-sm ms-2">
+            🗺️ Abrir en mapa grande
+          </button>
         </div>
+      </div>
 
-        <!-- KPIs -->
-        <div class="row mb-3">
-          <div class="col-12">
-            <div class="kpi-grid-intendente">
-              <div class="kpi-card-int">
-                <div class="kpi-label"><i class="bx bx-message-rounded-detail"></i> Reportes ciudadanos</div>
-                <div id="kpiReportes" class="kpi-value">--</div>
-                <div class="kpi-sub">Total en el rango seleccionado</div>
-              </div>
-              <div class="kpi-card-int">
-                <div class="kpi-label"><i class="bx bx-building-house"></i> Acciones municipales</div>
-                <div id="kpiAcciones" class="kpi-value">--</div>
-                <div class="kpi-sub">Intervenciones registradas</div>
-              </div>
-              <div class="kpi-card-int">
-                <div class="kpi-label"><i class="bx bx-check-circle"></i> % reportes solucionados</div>
-                <div id="kpiSolucion" class="kpi-value">--</div>
-                <div class="kpi-sub">Respecto al total de reportes</div>
-              </div>
-              <div class="kpi-card-int">
-                <div class="kpi-label"><i class="bx bx-time-five"></i> Tiempo promedio</div>
-                <div id="kpiTiempo" class="kpi-value">--</div>
-                <div class="kpi-sub">Desde el reporte hasta la acción</div>
-              </div>
-              <div class="kpi-card-int">
-                <div class="kpi-label"><i class="bx bx-star"></i> Operador más eficiente</div>
-                <div id="kpiOperadorEficiente" class="kpi-value">--</div>
-                <div class="kpi-sub">Mayor % de casos solucionados</div>
-              </div>
-              <div class="kpi-card-int">
-                <div class="kpi-label"><i class="bx bx-run"></i> Operador móvil destacado</div>
-                <div id="kpiOperadorMovil" class="kpi-value">--</div>
-                <div class="kpi-sub">Más acciones registradas</div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Fotos aportadas por el ciudadano</div>
+        <div id="detalleFotosCiudadano" class="d-flex flex-wrap"></div>
+      </div>
 
-        <!-- GRÁFICOS -->
-        <div class="row mb-3">
-          <div class="col-md-6 mb-3">
-            <div class="card card-chart">
-              <div class="card-body">
-                <div class="card-chart-header">Reportes por categoría</div>
-                <canvas id="chartReportesCat" height="220"></canvas>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6 mb-3">
-            <div class="card card-chart">
-              <div class="card-body">
-                <div class="card-chart-header">Acciones por categoría</div>
-                <canvas id="chartAccionesCat" height="220"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
+      <hr class="my-3"/>
 
-        <div class="row mb-3">
-          <div class="col-md-6 mb-3">
-            <div class="card card-chart">
-              <div class="card-body">
-                <div class="card-chart-header">Reportes vs acciones por día</div>
-                <canvas id="chartLineaDia" height="220"></canvas>
-              </div>
-            </div>
+      <div class="mb-2 d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">
+            Acciones realizadas por operadores móviles
           </div>
-          <div class="col-md-6 mb-3">
-            <div class="card card-chart">
-              <div class="card-body">
-                <div class="card-chart-header">Pendientes vs solucionados</div>
-                <canvas id="chartPendSol" height="220"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="row mb-4">
-          <div class="col-md-6 mb-3">
-            <div class="card card-chart">
-              <div class="card-body">
-                <div class="card-chart-header">Acciones por operador móvil</div>
-                <canvas id="chartOperadores" height="220"></canvas>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6 mb-3">
-            <div class="card card-chart">
-              <div class="card-body">
-                <div class="card-chart-header">Top categorías de acción</div>
-                <canvas id="chartTopCats" height="220"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TABLAS (solo primeras 15 filas) -->
-        <div class="row mb-4">
-          <!-- Reportes -->
-          <div class="col-12 col-xl-6 mb-3">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Reportes ciudadanos (top 15)</h3>
-              </div>
-              <div class="tabla-wrapper">
-                <table class="table table-sm table-hover table-vcenter" id="tablaReportes">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Fecha</th>
-                      <th>Barrio</th>
-                      <th>Categoría</th>
-                      <th>Estado</th>
-                      <th class="w-1"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- se llena por JS -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Acciones -->
-          <div class="col-12 col-xl-6 mb-3">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">Acciones municipales (top 15)</h3>
-              </div>
-              <div class="tabla-wrapper">
-                <table class="table table-sm table-hover table-vcenter" id="tablaAcciones">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Fecha</th>
-                      <th>Título</th>
-                      <th>Categoría</th>
-                      <th>Operador</th>
-                      <th class="w-1"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- se llena por JS -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div> <!-- container-fluid -->
-    </div> <!-- page-body -->
-
-    <footer class="footer footer-transparent border-top">
-      <div class="container-fluid">
-        <div class="row text-center align-items-center flex-row-reverse">
-          <div class="col-12">
-            <p class="mb-0 text-secondary small">
-              © AsuAlerta 2025 – Panel intendente. Datos sólo lectura, alimentados por el sistema municipal.
-            </p>
+          <div class="small text-muted">
+            Intervenciones municipales registradas desde el campo.
           </div>
         </div>
       </div>
-    </footer>
-  </div><!-- page -->
-  <!-- MODAL DETALLE (reporte / acción) -->
-  <div class="modal modal-blur fade" id="modalDetalle" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <button type="button" class="btn-close position-absolute end-0 mt-3 me-3" data-bs-dismiss="modal" aria-label="Close"></button>
-        <div class="modal-header border-0 pb-0">
-          <h3 class="modal-title" id="modalDetalleTitulo">Detalle</h3>
-        </div>
-        <div class="modal-body">
-          <div id="modalDetalleBody">
-            <!-- se rellena por JS -->
-          </div>
-        </div>
-        <div class="modal-footer border-0 pt-0">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
-        </div>
-      </div>
+
+      <div id="accionesListado"></div>
+
     </div>
   </div>
 
-  <!-- MODAL INSTALACIÓN PWA -->
-  <div id="installModal" class="pwa-modal">
-    <div class="pwa-modal-content">
-      <button id="closeInstallModal" class="pwa-close" type="button">×</button>
+  <!-- ========================= -->
+  <!-- JS BÁSICO DE LA PÁGINA    -->
+  <!-- ========================= -->
+  <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/js/tabler.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-      <h2>Instalá AsuAlerta 📲</h2>
-      <p>Accedé más rápido al panel desde tu pantalla de inicio.</p>
-
-      <h3>Android</h3>
-      <p>Apretá el botón <b>⋮</b> (arriba a la derecha) y elegí <b>“Agregar a pantalla principal”</b>.</p>
-
-      <h3>iPhone / iPad</h3>
-      <p>Tocá el botón <b>Compartir</b> y luego <b>“Agregar a inicio”</b>.</p>
-
-      <label class="no-show-label">
-        <input type="checkbox" id="dontShowInstall">
-        No volver a mostrar
-      </label>
-    </div>
-  </div>
-
-</div> <!-- /page -->
-
-<!-- LIBRERÍAS JS -->
-<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta20/dist/js/tabler.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<!-- LÓGICA PRINCIPAL DEL PANEL (todo va acá) -->
-<script type="module" src="panel-intendente.js"></script>
-
-<!-- UTILIDADES LOCALES: fecha, clima mini e instalación PWA -->
-<script>
-  // Fecha header mini
-  function actualizarFechaInt() {
-    const el = document.getElementById("fechaHeaderInt");
-    if (!el) return;
-
-    const dias = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-    const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-
-    const f = new Date();
-    const txt = dias[f.getDay()] + " " + f.getDate() + " " + meses[f.getMonth()];
-    el.textContent = txt;
-  }
-
-  // Clima mini (similar a otros paneles)
-  async function actualizarClimaMiniInt() {
-    const tempEl = document.getElementById("weatherTempInt");
-    const iconWrap = document.getElementById("weatherMiniInt");
-    if (!tempEl || !iconWrap) return;
-
-    try {
-      const resp = await fetch(
-        "https://api.open-meteo.com/v1/forecast?latitude=-25.28&longitude=-57.64&current_weather=true"
-      );
-      const data = await resp.json();
-      const t = data.current_weather?.temperature;
-      const code = data.current_weather?.weathercode;
-
-      if (typeof t === "number") {
-        tempEl.textContent = t + "°C";
-      }
-
-      let iconClass = "bx bx-sun";
-      if (code >= 1 && code <= 3) iconClass = "bx bx-cloud";
-      if (code >= 45 && code <= 48) iconClass = "bx bx-wind";
-      if (code >= 51 && code <= 67) iconClass = "bx bx-cloud-drizzle";
-      if (code >= 71 && code <= 77) iconClass = "bx bx-cloud-snow";
-      if (code >= 80 && code <= 82) iconClass = "bx bx-cloud-rain";
-      if (code >= 95) iconClass = "bx bx-bolt-circle";
-
-      const icon = iconWrap.querySelector("i");
-      if (icon) icon.className = iconClass;
-    } catch (e) {
-      console.warn("Error clima mini intendente", e);
-    }
-  }
-
-  // PWA install modal (primeras 2 veces o hasta "no volver a mostrar")
-  function initPwaInstallModal() {
-    const modal = document.getElementById("installModal");
-    const closeBtn = document.getElementById("closeInstallModal");
-    const dontShow = document.getElementById("dontShowInstall");
-    if (!modal || !closeBtn || !dontShow) return;
-
-    // ya está instalado en modo standalone?
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      window.navigator.standalone === true;
-
-    if (isStandalone) return;
-
-    const hideFlag = localStorage.getItem("asu_pwa_hide_int");
-    if (hideFlag === "1") return;
-
-    let visitas = parseInt(localStorage.getItem("asu_pwa_int_visits") || "0", 10);
-    visitas += 1;
-    localStorage.setItem("asu_pwa_int_visits", String(visitas));
-
-    // Mostrar solo primeras 2 veces, salvo que marque "no volver a mostrar"
-    if (visitas <= 2) {
-      modal.style.display = "flex";
-    }
-
-    closeBtn.addEventListener("click", () => {
-      modal.style.display = "none";
-      if (dontShow.checked) {
-        localStorage.setItem("asu_pwa_hide_int", "1");
-      }
-    });
-
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) {
-        modal.style.display = "none";
-        if (dontShow.checked) {
-          localStorage.setItem("asu_pwa_hide_int", "1");
-        }
-      }
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    actualizarFechaInt();
-    actualizarClimaMiniInt();
-    initPwaInstallModal();
-  });
-</script>
-
-<style>
-  /* Modal instalación PWA */
-  .pwa-modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.55);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-  }
-  .pwa-modal-content {
-    position: relative;
-    background: #ffffff;
-    max-width: 360px;
-    width: 90%;
-    padding: 20px 18px 18px;
-    border-radius: 14px;
-    text-align: left;
-    box-shadow: 0 10px 30px rgba(15,23,42,.35);
-    font-size: 0.92rem;
-  }
-  .pwa-modal-content h2 {
-    font-size: 1.15rem;
-    margin-bottom: 8px;
-    font-weight: 700;
-  }
-  .pwa-modal-content h3 {
-    margin-top: 10px;
-    margin-bottom: 4px;
-    font-size: 0.95rem;
-    font-weight: 600;
-  }
-  .pwa-close {
-    position: absolute;
-    top: 8px;
-    right: 10px;
-    border: none;
-    background: transparent;
-    font-size: 20px;
-    cursor: pointer;
-  }
-  .no-show-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 10px;
-    font-size: 0.86rem;
-    color: #475569;
-  }
-</style>
+  <!-- ========================= -->
+  <!-- LÓGICA DEL PANEL          -->
+  <!-- ========================= -->
+  <script type="module" src="panel-intendente.js"></script>
+  <script type="module" src="panel-intendente-advanced.js"></script>
 
 </body>
 </html>
 
-  

@@ -7,6 +7,7 @@
   <title>AsuAlerta – Mapa ciudadano</title>
   <meta name="theme-color" content="#d32f2f" />
 <link rel="manifest" href="/manifest.json" />
+
   <!-- Leaflet -->
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -200,7 +201,7 @@
       <div class="cat-grid">
         <button class="cat-btn" data-cat="bache">Bache 🚧</button>
         <button class="cat-btn" data-cat="arbol_caido">Árbol caído 🌳</button>
-        <button class="cat-btn" data-cat="basura">Basural 🗑️</button>
+        <button class="cat-btn" data-cat="basural">Basural 🗑️</button>
         <button class="cat-btn" data-cat="cano_roto">Caño roto 🚰</button>
       </div>
 
@@ -296,10 +297,25 @@
   <script src="ui.js"></script>
   <script type="module" src="clima.js"></script>
   <script type="module" src="home.js"></script>
-   <script>
+  <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js');
-  }
+  navigator.serviceWorker.register('/service-worker.js').then(reg => {
+    console.log("SW instalado", reg);
+
+    // Forzar actualización inmediata
+    reg.onupdatefound = () => {
+      const sw = reg.installing;
+      sw.onstatechange = () => {
+        if (sw.state === "installed" && navigator.serviceWorker.controller) {
+          console.log("Nueva versión disponible, refrescando...");
+          window.location.reload();
+        }
+      };
+    };
+  });
+}
+
 </script>
+
 </body>
 </html>

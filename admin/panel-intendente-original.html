@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <title>AsuAlerta – Panel intendente</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Tabler CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-flags.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-payments.min.css"
+    rel="stylesheet"
+  />
+  <link
+    href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/css/tabler-vendors.min.css"
+    rel="stylesheet"
+  />
+  <link rel="icon" type="image/x-icon" href="https://codigocenter.com/logo/asu1.png">
+
+  <!-- Leaflet + MarkerCluster -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+
+  <style>
+    .category-dot {
+      display:inline-block;
+      width:10px;
+      height:10px;
+      border-radius:3px; /* cuadrado */
+      margin-right:6px;
+    }
+    .foto-thumb {
+      width:40px;
+      height:40px;
+      object-fit:cover;
+      border-radius:4px;
+      margin-right:4px;
+      cursor:pointer;
+      border:1px solid rgba(0,0,0,0.06);
+    }
+    .stat-label {
+      font-size:0.8rem;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      color:rgba(0,0,0,.6);
+    }
+    [data-bs-theme="dark"] .stat-label {
+      color:rgba(255,255,255,.6);
+    }
+    .stat-number {
+      font-size:1.7rem;
+      font-weight:600;
+    }
+    .stat-caption {
+      font-size:0.8rem;
+      color:rgba(0,0,0,.55);
+    }
+    [data-bs-theme="dark"] .stat-caption {
+      color:rgba(255,255,255,.55);
+    }
+    .badge-pill {
+      border-radius:999px;
+    }
+
+    /* Timeline acciones móviles */
+    .timeline {
+      border-left: 2px solid rgba(0,0,0,0.1);
+      padding-left: 16px;
+      margin-left: 4px;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 18px;
+    }
+    .timeline-point {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      position: absolute;
+      left: -7px;
+      top: 4px;
+      background: var(--tblr-blue, #206bc4);
+    }
+    .timeline-event {
+      padding-left: 4px;
+    }
+    #miniMapaDetalle {
+      width:100%;
+      height:200px;
+      border-radius:8px;
+      border:1px solid rgba(0,0,0,.1);
+      overflow:hidden;
+    }
+    .acciones-fotos img {
+      width:52px;
+      height:52px;
+      object-fit:cover;
+      border-radius:6px;
+      margin-right:4px;
+      margin-top:4px;
+      border:1px solid rgba(0,0,0,0.08);
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- NAVBAR -->
+    <header class="navbar navbar-expand-md navbar-light d-print-none">
+      <div class="container-xl">
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+          <span class="navbar-brand-text">
+            AsuAlerta – Intendente
+          </span>
+        </h1>
+
+        <div class="navbar-nav flex-row order-md-last">
+
+          <!-- THEME BUTTON -->
+          <button class="nav-link px-3" id="themeToggle" type="button" title="Cambiar tema">
+            🌙
+          </button>
+
+          <!-- FULLSCREEN -->
+          <button id="btnFullscreen" class="btn btn-outline-secondary btn-icon" title="Pantalla completa">
+            <i class="ti ti-maximize"></i>
+          </button>
+
+          <!-- DROPDOWN USUARIO -->
+          <div class="nav-item dropdown ms-2">
+            <a class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" href="#">
+              <span class="avatar avatar-sm">IN</span>
+              <div class="d-none d-xl-block ps-2">
+                <div id="intNombreLabel">Intendente</div>
+                <div class="mt-1 small text-muted" id="intDeptoLabel">Vista global</div>
+              </div>
+            </a>
+
+            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              <a id="btnLogout" href="javascript:void(0)" class="dropdown-item">Cerrar sesión</a>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="collapse navbar-collapse" id="navbar-menu">
+          <!-- vacío para intendente -->
+          <div class="navbar-nav"></div>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- CONTENIDO -->
+    <div class="page-wrapper">
+      <div class="page-body">
+        <div class="container-xl">
+
+          <!-- HEADER + BOTONES HISTÓRICO -->
+          <div class="page-header d-print-none">
+            <div class="row align-items-center">
+              <div class="col">
+                <h2 class="page-title">
+                  Panel de intendente municipal
+                </h2>
+                <div class="text-muted mt-1">
+                  Vista global de reportes ciudadanos y desempeño municipal. Por defecto se muestran solo los últimos 30 días.
+                </div>
+                <div class="alert alert-info mt-2 mb-1 py-2">
+                  <b>Modo actual:</b> últimos 30 días ·
+                  <span class="small text-muted">Para explorar la historia completa usá los botones de abajo.</span>
+                </div>
+              </div>
+
+              <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                  <button id="btnCsv30" class="btn btn-outline-secondary">
+                    ⬇️ Exportar CSV (30 días)
+                  </button>
+
+                  <div class="btn-group">
+                    <button id="btnVerHistorico" class="btn btn-primary">
+                      Ver histórico completo
+                    </button>
+                    <button id="btnCsvHistorico" class="btn btn-outline-success">
+                      ⬇️ CSV histórico
+                    </button>
+                    <button id="btnMapaHistorico" class="btn btn-secondary">
+                      Mapa histórico
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- LEYENDA CATEGORÍAS -->
+          <div class="mb-3">
+            <span class="me-3 small text-muted">Leyenda categorías:</span>
+            <span class="badge badge-pill me-2" style="background:#d32f2f;">Bache</span>
+            <span class="badge badge-pill me-2" style="background:#2e7d32;">Basural</span>
+            <span class="badge badge-pill me-2" style="background:#b8860b;">Árbol caído</span>
+            <span class="badge badge-pill me-2" style="background:#1976d2;">Caño roto</span>
+          </div>
+
+          <!-- STATS GLOBALES -->
+          <div class="row row-deck row-cards mb-3">
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Total reportes (histórico)</div>
+                  <div class="stat-number" id="stat_total_global">0</div>
+                  <div class="stat-caption">Todos los reportes del sistema.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Pendientes (histórico)</div>
+                  <div class="stat-number text-warning" id="stat_pendientes_global">0</div>
+                  <div class="stat-caption">Aún sin marcar como solucionados.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Solucionados (histórico)</div>
+                  <div class="stat-number text-success" id="stat_solucionados_global">0</div>
+                  <div class="stat-caption">Reportes marcados como resueltos.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Tiempo promedio</div>
+                  <div class="stat-number" id="stat_tiempo_global">-</div>
+                  <div class="stat-caption">Promedio de resolución (horas).</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STATS 30 DÍAS -->
+          <div class="row row-deck row-cards mb-4">
+            <div class="col-sm-6 col-lg-4">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Reportes últimos 30 días</div>
+                  <div class="stat-number" id="stat_total_30">0</div>
+                  <div class="stat-caption">Carga ciudadana reciente.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-4">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Solucionados últimos 30 días</div>
+                  <div class="stat-number text-success" id="stat_sol_30">0</div>
+                  <div class="stat-caption">Casos cerrados en ese período.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-4">
+              <div class="card">
+                <div class="card-body">
+                  <div class="stat-label">Pendientes &gt; 48h (30 días)</div>
+                  <div class="stat-number text-danger" id="stat_atrasados_30">0</div>
+                  <div class="stat-caption">Casos críticos a priorizar.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GRAFICOS BARRAS -->
+          <div class="row row-deck row-cards mb-4">
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Reportes por categoría (30 días)</div>
+                </div>
+                <div class="card-body">
+                  <canvas id="chartCat30" height="140"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Reportes por departamento (30 días)</div>
+                </div>
+                <div class="card-body">
+                  <canvas id="chartDepto30" height="140"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Pendientes vs solucionados (30 días)</div>
+                </div>
+                <div class="card-body">
+                  <canvas id="chartEstado30" height="140"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LISTADO DE REPORTES (TABLA 30 DÍAS) -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                Reportes últimos 30 días (todos los departamentos)
+                <span class="text-muted small ms-2">(Atajos: R refresca, F buscador)</span>
+              </div>
+              <div class="card-actions">
+                <button id="btnRefrescar" class="btn btn-icon" type="button" title="Refrescar (R)">
+                  ⟳
+                </button>
+              </div>
+            </div>
+
+            <div class="card-body border-bottom py-3">
+              <div class="row g-2">
+
+                <!-- BUSCADOR -->
+                <div class="col-md-3">
+                  <div class="form-label">Buscar</div>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="buscar"
+                    placeholder="Detalle, barrio o ciudadano..."
+                  />
+                </div>
+
+                <!-- ESTADO -->
+                <div class="col-md-3">
+                  <div class="form-label">Estado</div>
+                  <select class="form-select" id="filtroEstado">
+                    <option value="">Todos</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="solucionado">Solucionado</option>
+                  </select>
+                </div>
+
+                <!-- CATEGORÍA -->
+                <div class="col-md-3">
+                  <div class="form-label">Categoría</div>
+                  <select class="form-select" id="filtroCategoria">
+                    <option value="">Todas</option>
+                    <option value="bache">Bache</option>
+                    <option value="basural">Basural</option>
+                    <option value="arbol_caido">Árbol caído</option>
+                    <option value="cano_roto">Caño roto</option>
+                  </select>
+                </div>
+
+                <!-- DEPTO -->
+                <div class="col-md-3">
+                  <div class="form-label">Departamento</div>
+                  <select class="form-select" id="filtroDepto">
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+
+                <!-- FECHAS -->
+                <div class="col-md-3 mt-2">
+                  <div class="form-label">Fecha (desde)</div>
+                  <input type="date" class="form-control" id="fchDesde">
+                </div>
+
+                <div class="col-md-3 mt-2">
+                  <div class="form-label">Fecha (hasta)</div>
+                  <input type="date" class="form-control" id="fchHasta">
+                </div>
+
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-vcenter card-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Departamento</th>
+                    <th>Categoría</th>
+                    <th>Barrio</th>
+                    <th>Detalle</th>
+                    <th>Ciudadano</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th class="text-end">Acciones</th>
+                  </tr>
+                </thead>
+
+                <tbody id="tablaReportesInt">
+                  <tr><td colspan="9" class="text-center py-4">Cargando...</td></tr>
+                </tbody>
+
+              </table>
+            </div>
+
+            <div id="paginacionTabla" class="card-footer d-flex align-items-center"></div>
+          </div>
+
+          <!-- MAPA 30 DÍAS -->
+          <div class="card mt-4">
+            <div class="card-header">
+              <div class="card-title">Mapa últimos 30 días (cluster por categoría)</div>
+            </div>
+            <div class="card-body p-0">
+              <div id="map30" style="height:400px;width:100%;"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DETALLE REPORTE (OFFCANVAS) -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="detalleReportePanel">
+    <div class="offcanvas-header">
+      <div>
+        <h3 class="offcanvas-title" id="detalleTitulo">Detalle de reporte</h3>
+        <div class="text-muted small" id="detalleSubtitulo"></div>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+    </div>
+
+    <div class="offcanvas-body">
+
+      <!-- ESTADO/CATEGORÍA -->
+      <div class="mb-3">
+        <span id="detalleBadgeEstado" class="badge badge-pill bg-warning me-2">Pendiente</span>
+        <span class="badge badge-pill bg-secondary" id="detalleCategoriaChip">CATEGORÍA</span>
+        <span class="badge badge-pill bg-info ms-2" id="detalleDeptoChip">DEPTO</span>
+      </div>
+
+      <!-- DATOS CIUDADANO -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Datos del ciudadano</div>
+        <div id="detalleCiudadanoNombre" class="fw-semibold">-</div>
+        <div id="detalleCiudadanoCelular" class="text-muted small">-</div>
+      </div>
+
+      <!-- DESCRIPCIÓN -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Descripción del problema</div>
+        <div id="detalleTextoReporte">-</div>
+      </div>
+
+      <!-- FECHAS -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Fechas del proceso</div>
+        <div id="detalleFechas"></div>
+      </div>
+
+      <!-- MINIDASHBOARD -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Resumen categoría / barrio (30 días)</div>
+        <div id="detalleMiniDashboard" class="small"></div>
+      </div>
+
+      <!-- MINI MAPA + DUPLICADOS -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Ubicación en mapa</div>
+        <div id="miniMapaDetalle"></div>
+
+        <div class="mt-2 d-flex justify-content-between">
+
+          <div id="alertaDuplicados" class="alert alert-warning d-none mb-0 me-2 py-1 px-2 flex-grow-1">
+            ⚠️ Hay reportes cercanos a esta ubicación.
+            <div id="listaDuplicados" class="small mt-1"></div>
+          </div>
+
+          <button id="btnAbrirEnMapa" class="btn btn-outline-primary btn-sm ms-2">
+            🗺️ Abrir en mapa grande
+          </button>
+
+        </div>
+      </div>
+
+      <!-- FOTOS CIUDADANO -->
+      <div class="mb-3">
+        <div class="text-muted text-uppercase small mb-1">Fotos aportadas por el ciudadano</div>
+        <div id="detalleFotosCiudadano" class="d-flex flex-wrap"></div>
+      </div>
+
+      <hr class="my-3"/>
+
+      <!-- ACCIONES MUNICIPALES -->
+      <div class="mb-2 d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted text-uppercase small mb-1">
+            Acciones realizadas por operadores móviles
+          </div>
+          <div class="small text-muted">
+            Intervenciones municipales registradas desde el campo.
+          </div>
+        </div>
+      </div>
+      <div id="accionesListado"></div>
+
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta19/dist/js/tabler.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <!-- Chart.js para gráficos de barras -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <script>
+    // ============================
+    // CONFIG / AUTH
+    // ============================
+    const WORKER_URL = "https://cold-base-33cf.nanotobp.workers.dev";
+    const SUPABASE_URL  = "https://wreqfthiuqwzusthjcjv.supabase.co";
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXFmdGhpdXF3enVzdGhqY2p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MTI1NjUsImV4cCI6MjA3OTk4ODU2NX0.O9AaAi34paGxTc7ek5FTgouuTuh0J9c6hLAgik_EpWE";
+
+    // ============================
+    // CATEGORÍAS (COLORES / LABELS)
+    // ============================
+    const catColors = {
+      bache: "#d32f2f",
+      baches: "#d32f2f",
+      basural: "#2e7d32",
+      basura: "#2e7d32",
+      arbol_caido:"#b8860b",
+      cano_roto:"#1976d2"
+    };
+    const catLabels = {
+      bache:"BACHE", baches:"BACHE",
+      basural:"BASURAL", basura:"BASURAL",
+      arbol_caido:"ÁRBOL CAÍDO",
+      cano_roto:"CAÑO ROTO"
+    };
+
+    function matchCategoriaFiltro(valorFiltro, cat) {
+      if (!valorFiltro || !cat) return true;
+      if (valorFiltro === "bache") {
+        return cat === "bache" || cat === "baches";
+      }
+      if (valorFiltro === "basural") {
+        return cat === "basural" || cat === "basura";
+      }
+      return cat === valorFiltro;
+    }
+
+    // ============================
+    // ESTADO GLOBAL
+    // ============================
+    let reportesFull = [];
+    let reportes30   = [];
+    let deptosMap    = {};
+    let accionesCache = {};
+    let mapa30 = null;
+    let cluster30 = null;
+    let miniMapInstance = null;
+    let reporteDetalleActual = null;
+
+    // paginación tabla
+    const PAGE_SIZE = 15;
+    let paginaActual = 1;
+    let listaActual = [];
+
+    // charts
+    let chartCat30 = null;
+    let chartDepto30 = null;
+    let chartEstado30 = null;
+
+    // ============================
+    // TEMA
+    // ============================
+    const htmlEl    = document.documentElement;
+    const themeBtn  = document.getElementById("themeToggle");
+
+    function setTemaInicial() {
+      let saved = localStorage.getItem("asu_theme");
+      if (!saved) {
+        saved = window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: dark)").matches
+                  ? "dark"
+                  : "light";
+      }
+      htmlEl.setAttribute("data-bs-theme", saved);
+      themeBtn.textContent = saved === "dark" ? "☀️" : "🌙";
+    }
+
+    function toggleTema() {
+      const actual = htmlEl.getAttribute("data-bs-theme") || "light";
+      const nuevo  = actual === "dark" ? "light" : "dark";
+      htmlEl.setAttribute("data-bs-theme", nuevo);
+      localStorage.setItem("asu_theme", nuevo);
+      themeBtn.textContent = nuevo === "dark" ? "☀️" : "🌙";
+    }
+
+    themeBtn.addEventListener("click", toggleTema);
+    setTemaInicial();
+
+    // ============================
+    // FULLSCREEN
+    // ============================
+    const btnFullscreen = document.getElementById("btnFullscreen");
+    if (btnFullscreen) {
+      btnFullscreen.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(err => {
+            console.error("Error al entrar en fullscreen:", err);
+          });
+          btnFullscreen.innerHTML = `<i class="ti ti-minimize"></i>`;
+        } else {
+          document.exitFullscreen().catch(err => {
+            console.error("Error al salir de fullscreen:", err);
+          });
+          btnFullscreen.innerHTML = `<i class="ti ti-maximize"></i>`;
+        }
+      });
+
+      document.addEventListener("fullscreenchange", () => {
+        if (!document.fullscreenElement) {
+          btnFullscreen.innerHTML = `<i class="ti ti-maximize"></i>`;
+        }
+      });
+    }
+
+    // ============================
+    // LOGOUT
+    // ============================
+    document.getElementById("btnLogout").addEventListener("click", () => {
+      if (!confirm("¿Cerrar sesión?")) return;
+      localStorage.removeItem("asu_jwt");
+      localStorage.removeItem("asu_rol");
+      localStorage.removeItem("asu_email");
+      localStorage.removeItem("asu_departamento");
+      window.location.href = "/admin/login.html";
+    });
+
+    // ============================
+    // FETCH — ESTADÍSTICAS
+    // ============================
+    async function cargarEstadisticasGlobales() {
+      try {
+        const token = localStorage.getItem("asu_jwt");
+        const res = await fetch(WORKER_URL + "/estadisticas", {
+          headers: { Authorization: "Bearer " + token }
+        });
+        const json = await res.json();
+        if (!json || json.error) {
+          throw new Error(json?.error || "Error desconocido en /estadisticas");
+        }
+
+        document.getElementById("stat_total_global").textContent        = json.total ?? 0;
+        document.getElementById("stat_pendientes_global").textContent   = json.pendientes ?? 0;
+        document.getElementById("stat_solucionados_global").textContent = json.solucionados ?? 0;
+
+        if (json.promedio_horas_resolucion != null) {
+          const v = Number(json.promedio_horas_resolucion);
+          document.getElementById("stat_tiempo_global").textContent =
+            v < 1 ? Math.round(v * 60) + " min" : v.toFixed(1) + " h";
+        } else {
+          document.getElementById("stat_tiempo_global").textContent = "-";
+        }
+
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // ============================
+    // FETCH — DEPARTAMENTOS
+    // ============================
+    async function cargarDepartamentos() {
+      try {
+        const url = `${SUPABASE_URL}/rest/v1/departamentos?select=id,nombre,slug`;
+        const res = await fetch(url, {
+          headers: {
+            apikey: SUPABASE_ANON,
+            Authorization: "Bearer " + SUPABASE_ANON
+          }
+        });
+        const data = await res.json();
+
+        deptosMap = {};
+        const sel = document.getElementById("filtroDepto");
+        data.forEach(d => {
+          deptosMap[d.id] = d.nombre;
+          const opt = document.createElement("option");
+          opt.value = d.id;
+          opt.textContent = d.nombre;
+          sel.appendChild(opt);
+        });
+
+      } catch (e) {
+        console.error("Error cargando departamentos:", e);
+      }
+    }
+
+    // ============================
+    // FETCH — REPORTES INTENDENTE
+    // ============================
+    async function cargarReportesIntendente() {
+      const token = localStorage.getItem("asu_jwt");
+      const rol = localStorage.getItem("asu_rol");
+
+      if (!token || rol !== "intendente") {
+        alert("Sesión inválida.");
+        return;
+      }
+
+      try {
+        const resp = await fetch(WORKER_URL + "/listarReportes", {
+          headers: { "Authorization": "Bearer " + token }
+        });
+
+        const json = await resp.json();
+
+        let arr = [];
+        if (Array.isArray(json.reportes)) {
+          arr = json.reportes;
+        } else if (Array.isArray(json.data)) {
+          arr = json.data;
+        } else if (Array.isArray(json)) {
+          arr = json;
+        } else {
+          console.error("Respuesta inesperada del Worker:", json);
+          alert("Error: El Worker no devolvió reportes.");
+          return;
+        }
+
+        reportesFull = arr;
+        calcularVentana30();
+        calcularStats30();
+
+        listaActual = reportes30.slice();
+        paginaActual = 1;
+        renderTablaPaginada();
+        renderMapa30(reportes30);
+        actualizarGraficos();
+
+      } catch (err) {
+        console.error("Error cargando reportes intendente:", err);
+        alert("Error cargando datos.");
+      }
+    }
+
+    // ============================
+    // CÁLCULO — ÚLTIMOS 30 DÍAS
+    // ============================
+    function calcularVentana30() {
+      const ahora = new Date();
+      const hace30 = new Date(ahora.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      reportes30 = reportesFull.filter(r => {
+        if (!r.created_at) return false;
+        const f = new Date(r.created_at);
+        return f >= hace30;
+      });
+    }
+
+    function calcularStats30() {
+      const total = reportes30.length;
+      const sol   = reportes30.filter(r => r.estado === "solucionado").length;
+
+      const ahora = new Date();
+      const hace48h = new Date(ahora.getTime() - 48 * 60 * 60 * 1000);
+      const atrasados = reportes30.filter(r =>
+        r.estado !== "solucionado" &&
+        r.created_at &&
+        new Date(r.created_at) < hace48h
+      ).length;
+
+      document.getElementById("stat_total_30").textContent = total;
+      document.getElementById("stat_sol_30").textContent   = sol;
+      document.getElementById("stat_atrasados_30").textContent = atrasados;
+    }
+
+    // ============================
+    // TABLA + PAGINACIÓN
+    // ============================
+    function construirFilaReporte(r) {
+      const catColor = catColors[r.categoria] || "#999";
+      const catLabel = catLabels[r.categoria] || (r.categoria || "").toUpperCase();
+      const fechaStr = r.created_at
+        ? new Date(r.created_at).toLocaleString("es-PY", {
+            day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"
+          })
+        : "-";
+
+      const deptoNombre = deptosMap[r.departamento_id] || "-";
+
+      const estadoHtml =
+        r.estado === "solucionado"
+          ? '<span class="badge bg-success badge-pill">Solucionado</span>'
+          : '<span class="badge bg-warning badge-pill">Pendiente</span>';
+
+      return `
+        <tr>
+          <td>${r.id}</td>
+          <td>${deptoNombre}</td>
+          <td>
+            <span class="category-dot" style="background:${catColor}"></span>
+            ${catLabel}
+          </td>
+          <td>${r.barrio || "-"}</td>
+          <td>${r.detalle || "-"}</td>
+          <td>
+            ${r.nombre || "-"}<br>
+            <span class="text-muted" style="font-size:0.8rem;">${r.celular || ""}</span>
+          </td>
+          <td>${estadoHtml}</td>
+          <td>${fechaStr}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-primary" data-ver="${r.id}">Ver</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    function renderTablaPaginada() {
+      const tbody = document.getElementById("tablaReportesInt");
+      const total = listaActual.length;
+
+      if (!total) {
+        tbody.innerHTML = `
+          <tr><td colspan="9" class="text-center py-4 text-muted">Sin datos disponibles</td></tr>
+        `;
+        actualizarPaginacion(0, 0, 0);
+        return;
+      }
+
+      const totalPaginas = Math.ceil(total / PAGE_SIZE);
+      if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+
+      const inicio = (paginaActual - 1) * PAGE_SIZE;
+      const fin = Math.min(inicio + PAGE_SIZE, total);
+      const slice = listaActual.slice(inicio, fin);
+
+      tbody.innerHTML = slice.map(construirFilaReporte).join("");
+      actualizarPaginacion(total, inicio + 1, fin);
+    }
+
+    function actualizarPaginacion(total, desde, hasta) {
+      const cont = document.getElementById("paginacionTabla");
+      if (!cont) return;
+
+      if (!total) {
+        cont.innerHTML = `<div class="text-muted small">Sin datos</div>`;
+        return;
+      }
+
+      const totalPaginas = Math.ceil(total / PAGE_SIZE);
+
+      cont.innerHTML = `
+        <div class="d-flex align-items-center w-100">
+          <div class="text-muted small">
+            Mostrando <span>${desde}</span>–<span>${hasta}</span> de <span>${total}</span> reportes
+          </div>
+          <div class="ms-auto btn-group">
+            <button class="btn btn-sm btn-outline-secondary" id="btnPrevPage" ${paginaActual <= 1 ? "disabled" : ""}>Anterior</button>
+            <button class="btn btn-sm btn-outline-secondary" id="btnNextPage" ${paginaActual >= totalPaginas ? "disabled" : ""}>Siguiente</button>
+          </div>
+        </div>
+      `;
+
+      const btnPrev = document.getElementById("btnPrevPage");
+      const btnNext = document.getElementById("btnNextPage");
+
+      btnPrev.onclick = () => {
+        if (paginaActual > 1) {
+          paginaActual--;
+          renderTablaPaginada();
+        }
+      };
+      btnNext.onclick = () => {
+        if (paginaActual < totalPaginas) {
+          paginaActual++;
+          renderTablaPaginada();
+        }
+      };
+    }
+
+    // ============================
+    // FILTROS
+    // ============================
+    function filtrar() {
+      const q   = document.getElementById("buscar").value.toLowerCase().trim();
+      const est = document.getElementById("filtroEstado").value;
+      const cat = document.getElementById("filtroCategoria").value;
+      const dep = document.getElementById("filtroDepto").value;
+      const fd  = document.getElementById("fchDesde").value;
+      const fh  = document.getElementById("fchHasta").value;
+
+      const filtrados = reportes30.filter(r => {
+        if (est && r.estado !== est) return false;
+        if (cat && !matchCategoriaFiltro(cat, r.categoria)) return false;
+        if (dep && String(r.departamento_id || "") !== dep) return false;
+
+        if (fd && r.created_at && new Date(r.created_at) < new Date(fd)) {
+          return false;
+        }
+        if (fh && r.created_at && new Date(r.created_at) > new Date(fh + "T23:59:59")) {
+          return false;
+        }
+
+        const texto =
+          (r.detalle || "").toLowerCase() + " " +
+          (r.barrio  || "").toLowerCase() + " " +
+          (r.nombre  || "").toLowerCase();
+
+        if (q && !texto.includes(q)) return false;
+        return true;
+      });
+
+      listaActual = filtrados;
+      paginaActual = 1;
+      renderTablaPaginada();
+      renderMapa30(filtrados);
+    }
+
+    document.getElementById("buscar").addEventListener("input", filtrar);
+    document.getElementById("filtroEstado").addEventListener("change", filtrar);
+    document.getElementById("filtroCategoria").addEventListener("change", filtrar);
+    document.getElementById("filtroDepto").addEventListener("change", filtrar);
+    document.getElementById("fchDesde").addEventListener("change", filtrar);
+    document.getElementById("fchHasta").addEventListener("change", filtrar);
+
+    document.getElementById("btnRefrescar").addEventListener("click", () => {
+      cargarEstadisticasGlobales();
+      cargarReportesIntendente();
+    });
+
+    // ============================
+    // MAPA 30 DÍAS
+    // ============================
+    function renderMapa30(baseLista) {
+      const lista = baseLista || reportes30;
+
+      if (!mapa30) {
+        mapa30 = L.map("map30").setView([-25.28, -57.64], 12);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19
+        }).addTo(mapa30);
+      }
+
+      if (cluster30) {
+        mapa30.removeLayer(cluster30);
+      }
+
+      cluster30 = L.markerClusterGroup();
+      lista.forEach(r => {
+        if (!r.lat || !r.lng) return;
+        const catLabel = catLabels[r.categoria] || r.categoria || "";
+        const deptoNombre = deptosMap[r.departamento_id] || "";
+        const barrio = r.barrio || "";
+        const fotos = Array.isArray(r.fotos_url) ? r.fotos_url : [];
+        const thumb = fotos.length
+          ? `<img src="${fotos[0]}" class="foto-thumb" />`
+          : "";
+
+        const marker = L.marker([r.lat, r.lng]);
+        const popupHtml = `
+  <div style="min-width:210px">
+    <div><strong>#${r.id}</strong> – ${catLabel}</div>
+    <div class="text-muted" style="font-size:0.8rem;">
+      ${deptoNombre}${barrio ? " · " + barrio : ""}
+    </div>
+    <div class="d-flex align-items-center mt-2">
+      ${thumb}
+      <button class="btn btn-sm btn-primary ms-auto" data-ver="${r.id}">
+        Ver
+      </button>
+    </div>
+  </div>
+`;
+
+        marker.bindPopup(popupHtml);
+        cluster30.addLayer(marker);
+      });
+
+      mapa30.addLayer(cluster30);
+    }
+
+    // ============================
+    // CHARTS
+    // ============================
+    function actualizarGraficos() {
+      const base = reportes30;
+      if (!base.length) {
+        if (chartCat30) chartCat30.destroy();
+        if (chartDepto30) chartDepto30.destroy();
+        if (chartEstado30) chartEstado30.destroy();
+        return;
+      }
+
+      // categorías
+      const catOrder = ["bache","basural","arbol_caido","cano_roto"];
+      const labelsCat = catOrder.map(c => catLabels[c] || c.toUpperCase());
+      const dataCat = catOrder.map(c =>
+        base.filter(r => matchCategoriaFiltro(c, r.categoria)).length
+      );
+
+      // departamentos
+      const idsDepto = [...new Set(base.map(r => r.departamento_id).filter(Boolean))];
+      const labelsDepto = idsDepto.map(id => deptosMap[id] || ("Depto " + id));
+      const dataDepto = idsDepto.map(id =>
+        base.filter(r => r.departamento_id === id).length
+      );
+
+      // estado
+      const total = base.length;
+      const sol = base.filter(r => r.estado === "solucionado").length;
+      const pend = total - sol;
+
+      const ctxCat = document.getElementById("chartCat30").getContext("2d");
+      const ctxDepto = document.getElementById("chartDepto30").getContext("2d");
+      const ctxEstado = document.getElementById("chartEstado30").getContext("2d");
+
+      if (chartCat30) chartCat30.destroy();
+      if (chartDepto30) chartDepto30.destroy();
+      if (chartEstado30) chartEstado30.destroy();
+
+      chartCat30 = new Chart(ctxCat, {
+        type: "bar",
+        data: {
+          labels: labelsCat,
+          datasets: [{
+            label: "Reportes",
+            data: dataCat
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display:false } },
+          scales: {
+            y: { beginAtZero:true, ticks:{ precision:0 } }
+          }
+        }
+      });
+
+      chartDepto30 = new Chart(ctxDepto, {
+        type: "bar",
+        data: {
+          labels: labelsDepto,
+          datasets: [{
+            label: "Reportes",
+            data: dataDepto
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display:false } },
+          scales: {
+            y: { beginAtZero:true, ticks:{ precision:0 } }
+          }
+        }
+      });
+
+      chartEstado30 = new Chart(ctxEstado, {
+        type: "bar",
+        data: {
+          labels: ["Pendientes","Solucionados"],
+          datasets: [{
+            label: "Reportes",
+            data: [pend, sol]
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display:false } },
+          scales: {
+            y: { beginAtZero:true, ticks:{ precision:0 } }
+          }
+        }
+      });
+    }
+
+    // ============================
+    // ACCIONES MUNICIPALES
+    // ============================
+    async function obtenerAccionesPorReporte(reporteId) {
+      if (!reporteId) return [];
+      if (accionesCache[reporteId]) return accionesCache[reporteId];
+
+      try {
+        const url =
+          `${SUPABASE_URL}/rest/v1/acciones_municipales?reporte_id=eq.${reporteId}&select=*`;
+
+        const res = await fetch(url, {
+          headers: {
+            apikey: SUPABASE_ANON,
+            Authorization: "Bearer " + SUPABASE_ANON
+          }
+        });
+
+        const data = await res.json();
+        accionesCache[reporteId] = Array.isArray(data) ? data : [];
+        return accionesCache[reporteId];
+
+      } catch (e) {
+        console.error(e);
+        return [];
+      }
+    }
+
+    // ============================
+    // DETALLE REPORTE
+    // ============================
+    const detallePanel   = document.getElementById("detalleReportePanel");
+    const detalleTitulo  = document.getElementById("detalleTitulo");
+    const detalleSub     = document.getElementById("detalleSubtitulo");
+    const detalleBadge   = document.getElementById("detalleBadgeEstado");
+    const detalleCatChip = document.getElementById("detalleCategoriaChip");
+    const detalleDeptoChip = document.getElementById("detalleDeptoChip");
+    const detalleCiudadanoNombre  = document.getElementById("detalleCiudadanoNombre");
+    const detalleCiudadanoCelular = document.getElementById("detalleCiudadanoCelular");
+    const detalleTextoReporte     = document.getElementById("detalleTextoReporte");
+    const detalleFechas           = document.getElementById("detalleFechas");
+    const detalleFotosCiudadano   = document.getElementById("detalleFotosCiudadano");
+    const detalleMiniDashboard    = document.getElementById("detalleMiniDashboard");
+    const accionesListado         = document.getElementById("accionesListado");
+    const alertaDuplicados        = document.getElementById("alertaDuplicados");
+    const listaDuplicados         = document.getElementById("listaDuplicados");
+    const btnAbrirEnMapa          = document.getElementById("btnAbrirEnMapa");
+
+    function buscarReportePorId(id) {
+      return reportesFull.find(r => String(r.id) === String(id));
+    }
+
+    function renderMiniDashboardStats(rep) {
+      const mismaCat = reportes30.filter(r => r.categoria === rep.categoria);
+      const mismoBarrio = reportes30.filter(r =>
+        r.barrio && rep.barrio &&
+        r.barrio.toLowerCase() === rep.barrio.toLowerCase()
+      );
+
+      const totalCat = mismaCat.length;
+      const totalCatPend = mismaCat.filter(r => r.estado !== "solucionado").length;
+
+      const totalBarrio = mismoBarrio.length;
+      const totalBarrioPend = mismoBarrio.filter(r => r.estado !== "solucionado").length;
+
+      detalleMiniDashboard.innerHTML = `
+        <div>En esta categoría (últimos 30 días): <b>${totalCat}</b> reportes, <b>${totalCatPend}</b> pendientes.</div>
+        <div>En este barrio (últimos 30 días): <b>${totalBarrio}</b> reportes, <b>${totalBarrioPend}</b> pendientes.</div>
+      `;
+    }
+
+    function renderMiniMapa(lat, lng) {
+      const mapDiv = document.getElementById("miniMapaDetalle");
+      mapDiv.innerHTML = "";
+      if (!lat || !lng || typeof L === "undefined") return;
+
+      miniMapInstance = L.map("miniMapaDetalle", {
+        attributionControl: false,
+        zoomControl: false,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        keyboard: false
+      }).setView([lat, lng], 16);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18
+      }).addTo(miniMapInstance);
+
+      L.marker([lat, lng]).addTo(miniMapInstance);
+    }
+
+    function distanciaMetros(lat1, lng1, lat2, lng2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI/180;
+      const dLng = (lng2 - lng1) * Math.PI/180;
+      const a = Math.sin(dLat/2)**2 +
+                Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180) *
+                Math.sin(dLng/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function verificarDuplicados(rep) {
+      alertaDuplicados.classList.add("d-none");
+      listaDuplicados.innerHTML = "";
+
+      if (!rep.lat || !rep.lng) return;
+
+      const cercanos = reportesFull.filter(r => {
+        if (String(r.id) === String(rep.id)) return false;
+        if (!r.lat || !r.lng) return false;
+        const d = distanciaMetros(rep.lat, rep.lng, r.lat, r.lng);
+        return d <= 40;
+      });
+
+      if (!cercanos.length) return;
+
+      alertaDuplicados.classList.remove("d-none");
+      listaDuplicados.innerHTML = cercanos
+        .map(c => {
+          const fecha = c.created_at ? c.created_at.slice(0,10) : "";
+          return `• #${c.id} – ${c.categoria} (${c.estado}) ${fecha}`;
+        })
+        .join("<br>");
+    }
+
+    function renderAccionesLista(lista) {
+      accionesListado.innerHTML = "";
+
+      if (!lista.length) {
+        accionesListado.innerHTML = `
+          <div class="text-muted small">
+            Aún no hay acciones registradas.
+          </div>`;
+        return;
+      }
+
+      lista.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+
+      const cont = document.createElement("div");
+      cont.className = "timeline";
+
+      lista.forEach(a => {
+        const fechaStr = a.created_at
+          ? new Date(a.created_at).toLocaleString("es-PY", {
+              day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"
+            })
+          : "";
+
+        const fotos = Array.isArray(a.fotos_url) ? a.fotos_url : [];
+
+        const item = document.createElement("div");
+        item.className = "timeline-item";
+
+        item.innerHTML = `
+          <div class="timeline-point"></div>
+          <div class="timeline-event">
+            <div class="timeline-header">
+              <strong>${a.titulo || (a.categoria || "Acción municipal")}</strong>
+              <span class="text-muted small"> · ${fechaStr}</span>
+            </div>
+            <div class="timeline-content small mt-1">
+              <b>Operador:</b> ${a.creado_por_nombre || "N/D"}
+              ${a.creado_por_identificador ? ` (${a.creado_por_identificador})` : ""}
+              <br>
+              ${a.detalle || "Acción registrada."}
+            </div>
+            ${
+              a.observacion
+                ? `<div class="small mt-2"><b>Observación:</b> ${a.observacion}</div>`
+                : ""
+            }
+            ${
+              a.social_url
+                ? `<div class="small mt-2"><a href="${a.social_url}" target="_blank">🔗 Ver publicación</a></div>`
+                : ""
+            }
+          </div>
+        `;
+
+        if (fotos.length) {
+          const fotosDiv = document.createElement("div");
+          fotosDiv.className = "acciones-fotos mt-2";
+          fotos.forEach(u => {
+            const img = document.createElement("img");
+            img.src = u;
+            img.onclick = () => window.open(u, "_blank");
+            fotosDiv.appendChild(img);
+          });
+          item.querySelector(".timeline-event").appendChild(fotosDiv);
+        }
+
+        cont.appendChild(item);
+      });
+
+      accionesListado.appendChild(cont);
+    }
+
+    // abrir detalle (offcanvas)
+    async function abrirDetalle(id) {
+
+      if (mapa30 && mapa30.closePopup) mapa30.closePopup();
+
+      const rep = buscarReportePorId(id);
+      if (!rep) {
+        alert("Reporte no encontrado.");
+        return;
+      }
+      reporteDetalleActual = rep;
+
+      const catLabel = catLabels[rep.categoria] || (rep.categoria || "").toUpperCase();
+      const barrio   = rep.barrio || "Sin barrio";
+      const deptoNombre = deptosMap[rep.departamento_id] || "Sin asignar";
+
+      detalleTitulo.textContent = `Reporte #${rep.id}`;
+      detalleSub.textContent    = `${catLabel} · ${barrio} · ${deptoNombre}`;
+
+      // categoría chip
+      detalleCatChip.textContent = catLabel;
+      const cColor = catColors[rep.categoria] || "#666";
+      detalleCatChip.style.backgroundColor = cColor;
+      detalleCatChip.style.borderColor = cColor;
+
+      // depto
+      detalleDeptoChip.textContent = deptoNombre;
+
+      // estado
+      if (rep.estado === "solucionado") {
+        detalleBadge.textContent = "Solucionado";
+        detalleBadge.classList.remove("bg-warning");
+        detalleBadge.classList.add("bg-success");
+      } else {
+        detalleBadge.textContent = "Pendiente";
+        detalleBadge.classList.remove("bg-success");
+        detalleBadge.classList.add("bg-warning");
+      }
+
+      detalleCiudadanoNombre.textContent  = rep.nombre || "-";
+      detalleCiudadanoCelular.textContent = rep.celular || "-";
+      detalleTextoReporte.textContent     = rep.detalle || "Sin descripción.";
+
+      const partesFechas = [];
+      if (rep.created_at) {
+        partesFechas.push(
+          `Creado: <b>${
+            new Date(rep.created_at).toLocaleString("es-PY", {
+              day:"2-digit", month:"short", year:"numeric",
+              hour:"2-digit", minute:"2-digit"
+            })
+          }</b>`
+        );
+      }
+      if (rep.estado === "solucionado" && rep.resuelto_at) {
+        partesFechas.push(
+          `Resuelto: <b>${
+            new Date(rep.resuelto_at).toLocaleString("es-PY", {
+              day:"2-digit", month:"short", year:"numeric",
+              hour:"2-digit", minute:"2-digit"
+            })
+          }</b>`
+        );
+      }
+      detalleFechas.innerHTML = partesFechas.join("<br/>") || "-";
+
+      // fotos ciudadano
+      detalleFotosCiudadano.innerHTML = "";
+      const fotos = Array.isArray(rep.fotos_url) ? rep.fotos_url : [];
+      if (!fotos.length) {
+        detalleFotosCiudadano.innerHTML = '<span class="text-muted small">Sin fotos adjuntas.</span>';
+      } else {
+        fotos.forEach(u => {
+          const img = document.createElement("img");
+          img.src = u;
+          img.className = "me-2 mb-2";
+          img.style.width = "72px";
+          img.style.height = "72px";
+          img.style.objectFit = "cover";
+          img.style.borderRadius = "8px";
+          img.style.cursor = "pointer";
+          img.onclick = () => window.open(u, "_blank");
+          detalleFotosCiudadano.appendChild(img);
+        });
+      }
+
+      renderMiniDashboardStats(rep);
+      renderMiniMapa(rep.lat, rep.lng);
+      verificarDuplicados(rep);
+      accionesListado.innerHTML = '<div class="small text-muted">Cargando acciones...</div>';
+
+      btnAbrirEnMapa.onclick = () => {
+        if (rep.lat && rep.lng) {
+          window.location.href = `/index.html?lat=${rep.lat}&lng=${rep.lng}&zoom=17`;
+        } else {
+          window.location.href = `/index.html`;
+        }
+      };
+
+      // abrir offcanvas
+      let oc = bootstrap.Offcanvas.getInstance(detallePanel);
+      if (!oc) {
+        oc = new bootstrap.Offcanvas(detallePanel);
+      }
+      oc.show();
+
+      // acciones municipales
+      const acciones = await obtenerAccionesPorReporte(id);
+      renderAccionesLista(acciones);
+    }
+
+    window.abrirDetalle = abrirDetalle;
+
+    // ============================
+    // EXPORTAR CSV
+    // ============================
+    function exportarCSV(data, filename) {
+      if (!data || !data.length) {
+        alert("No hay datos para exportar.");
+        return;
+      }
+
+      const encabezados = Object.keys(data[0]).join(",");
+      const filas = data.map(obj =>
+        Object.values(obj)
+          .map(v => `"${String(v === null || v === undefined ? "" : v).replace(/"/g, '""')}"`)
+          .join(",")
+      );
+
+      const csv = [encabezados, ...filas].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("btnCsv30").addEventListener("click", () => {
+      if (!reportes30.length) {
+        alert("No hay datos para los últimos 30 días.");
+        return;
+      }
+      exportarCSV(reportes30, "reportes_30_dias.csv");
+    });
+
+    document.getElementById("btnCsvHistorico").addEventListener("click", () => {
+      if (!reportesFull.length) {
+        alert("Todavía no se cargaron los reportes.");
+        return;
+      }
+      exportarCSV(reportesFull, "reportes_historico_completo.csv");
+    });
+
+    // ============================
+    // BOTONES HISTÓRICO (NUEVA PESTAÑA + TOKEN)
+    // ============================
+    document.getElementById("btnVerHistorico").addEventListener("click", () => {
+      const token = localStorage.getItem("asu_jwt");
+      if (!token) {
+        alert("Sesión inválida");
+        return;
+      }
+      window.open(`historico-intendente.html?token=${encodeURIComponent(token)}`, "_blank");
+    });
+
+    document.getElementById("btnMapaHistorico").addEventListener("click", () => {
+      const token = localStorage.getItem("asu_jwt");
+      if (!token) {
+        alert("Sesión inválida");
+        return;
+      }
+      window.open(`mapa-historico.html?token=${encodeURIComponent(token)}`, "_blank");
+    });
+
+    // ============================
+    // ATAJOS DE TECLADO
+    // ============================
+    document.addEventListener("keydown", (e) => {
+      const tag = (e.target.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+
+      const k = e.key.toLowerCase();
+      if (k === "r") {
+        e.preventDefault();
+        cargarEstadisticasGlobales();
+        cargarReportesIntendente();
+      } else if (k === "f") {
+        e.preventDefault();
+        document.getElementById("buscar").focus();
+      }
+    });
+
+    // ============================
+    // INIT
+    // ============================
+    document.addEventListener("DOMContentLoaded", async () => {
+      const token = localStorage.getItem("asu_jwt");
+      const rol   = localStorage.getItem("asu_rol");
+
+      if (!token || rol !== "intendente") {
+        document.body.innerHTML = "<h2 style='padding:20px;text-align:center;color:red;'>Acceso denegado. Rol intendente requerido.</h2>";
+        window.location.href = "/admin/login.html";
+        return;
+      }
+
+      const email = localStorage.getItem("asu_email") || "";
+      document.getElementById("intNombreLabel").textContent = email || "Intendente";
+      document.getElementById("intDeptoLabel").textContent   = "Vista global";
+
+      await cargarDepartamentos();
+      await cargarEstadisticasGlobales();
+      await cargarReportesIntendente();
+    });
+
+    // click delegado para botones "Ver" de tabla y mapa
+    window.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-ver]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-ver");
+      abrirDetalle(id);
+    });
+
+  </script>
+
+</body>
+</html>
