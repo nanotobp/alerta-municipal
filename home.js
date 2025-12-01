@@ -388,52 +388,89 @@ function bindFormulario(){
   const fotosCont    = document.getElementById("fotosContainer");
 
   takePhotoBtn.onclick = async () => {
-    if (fotos.length >= 5) return alert("Máx. 5 fotos.");
+    if (fotos.length >= 5) {
+      alert("Máximo 5 fotos permitidas.");
+      return;
+    }
+    
     try {
+      // Detener stream anterior si existe
+      if (videoStream) {
+        stopVideo();
+      }
+      
+      // Mostrar video primero
       video.style.display = "block";
-      videoStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } });
+      
+      // Solicitar acceso a la cámara
+      videoStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" } 
+      });
       video.srcObject = videoStream;
-    } catch(e){
-      alert("No se pudo acceder a la cámara");
+      
+      // Scroll hacia el video para mejor UX
+      video.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+    } catch(e) {
+      console.error("Error al acceder a la cámara:", e);
+      alert("No se pudo acceder a la cámara. Verificá los permisos.");
       video.style.display = "none";
     }
   };
 
   video.onclick = () => {
-    if (!videoStream) return;
+    if (!videoStream) {
+      alert("La cámara no está activa.");
+      return;
+    }
+    
+    // Configurar canvas con las dimensiones del video
     canvas.width  = video.videoWidth;
     canvas.height = video.videoHeight;
+    
     const ctx = canvas.getContext("2d");
-    ctx.drawImage(video,0,0);
+    ctx.drawImage(video, 0, 0);
 
-    canvas.toBlob(blob =>{
-      if (!blob) return;
+    // Convertir a blob con compresión
+    canvas.toBlob(blob => {
+      if (!blob) {
+        alert("Error al capturar la foto.");
+        return;
+      }
+      
+      // Agregar foto al array
       fotos.push(blob);
       renderFotos();
       stopVideo();
       actualizarResumen();
+      
+      // Feedback visual
+      console.log(`Foto ${fotos.length} capturada exitosamente`);
     }, "image/jpeg", 0.85);
   };
 
   function renderFotos(){
     fotosCont.innerHTML = "";
+    
     fotos.forEach((blob, idx) => {
       const url = URL.createObjectURL(blob);
 
-      // CORREGIDO: miniatura centrada y sin desbordes
       const d = document.createElement("div");
       d.className = "foto-thumb";
       d.innerHTML = `
-        <img src="${url}" style="max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;display:block;margin:auto;" />
-        <div class="remove-photo">×</div>
+        <img src="${url}" alt="Foto ${idx + 1}" class="foto-capturada" />
+        <div class="remove-photo" title="Eliminar foto">×</div>
       `;
 
+      // Botón eliminar
       d.querySelector(".remove-photo").onclick = () => {
-        fotos.splice(idx,1);
+        fotos.splice(idx, 1);
+        URL.revokeObjectURL(url); // Liberar memoria
         renderFotos();
         actualizarResumen();
       };
 
+      // Click en imagen para ver ampliada
       d.querySelector("img").onclick = () => openFotoViewer([url]);
 
       fotosCont.appendChild(d);
@@ -446,12 +483,21 @@ function bindFormulario(){
       videoStream = null;
     }
     video.style.display = "none";
+    video.srcObject = null;
   }
 
   // CANCELAR REPORTE
   document.getElementById("cancelReporte").onclick = () => {
     form.style.display = "none";
+    
+    // Limpiar fotos y liberar URLs
+    fotos.forEach(blob => {
+      if (blob instanceof Blob) {
+        URL.revokeObjectURL(URL.createObjectURL(blob));
+      }
+    });
     fotos = [];
+    
     document.getElementById("fotosContainer").innerHTML = "";
     categoriaReporte = null;
     document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
@@ -465,79 +511,127 @@ function bindFormulario(){
     stopVideo();
   };
 
-  // ENVIAR REPORTE
+  // ENVIAR REPORTE (CORREGIDO)
   document.getElementById("sendReporte").onclick = async () => {
     const nombre  = document.getElementById("nombre").value.trim();
     const celular = document.getElementById("celular").value.trim();
     const barrio  = document.getElementById("barrio").value.trim();
     const detalle = document.getElementById("detalle").value.trim();
 
-    if (!puntoSeleccionado) return alert("Tocá el mapa para ubicar.");
-    if (!categoriaReporte || !nombre || !celular || !barrio || fotos.length === 0)
-      return alert("Completá los datos y una foto.");
+    // Validaciones
+    if (!puntoSeleccionado) {
+      alert("Tocá el mapa para ubicar el problema.");
+      return;
+    }
+    
+    if (!categoriaReporte || !nombre || !celular || !barrio || fotos.length === 0) {
+      alert("Completá todos los campos obligatorios y tomá al menos una foto.");
+      return;
+    }
 
     const sendBtn = document.getElementById("sendReporte");
     sendBtn.disabled = true;
     sendBtn.textContent = "Enviando...";
 
-    // subir fotos
-    const urls = [];
-    for (let i=0; i<fotos.length; i++){
-      const name = `foto_${Date.now()}_${i}.jpg`;
+    try {
+      // SUBIR FOTOS
+      const urls = [];
+      
+      for (let i = 0; i < fotos.length; i++) {
+        const timestamp = Date.now();
+        const name = `foto_${timestamp}_${i}.jpg`;
 
-      const { error:upErr } = await supabase
-        .storage.from("fotos")
-        .upload(name, fotos[i], { contentType:"image/jpeg", upsert:false });
+        console.log(`Subiendo foto ${i + 1}/${fotos.length}...`);
 
-      if (upErr) continue;
+        const { data: uploadData, error: upErr } = await supabase
+          .storage
+          .from("fotos")
+          .upload(name, fotos[i], { 
+            contentType: "image/jpeg", 
+            upsert: false 
+          });
 
-      const { data:pub } = supabase.storage.from("fotos").getPublicUrl(name);
-      if (pub?.publicUrl) urls.push(pub.publicUrl);
-    }
+        if (upErr) {
+          console.error(`Error subiendo foto ${i + 1}:`, upErr);
+          continue; // Continuar con la siguiente foto
+        }
 
-    if (!urls.length) {
-      alert("Falló la subida de fotos.");
+        // Obtener URL pública
+        const { data: publicData } = supabase
+          .storage
+          .from("fotos")
+          .getPublicUrl(name);
+
+        if (publicData?.publicUrl) {
+          urls.push(publicData.publicUrl);
+          console.log(`Foto ${i + 1} subida: ${publicData.publicUrl}`);
+        }
+      }
+
+      // Verificar que al menos una foto se subió
+      if (urls.length === 0) {
+        throw new Error("No se pudo subir ninguna foto");
+      }
+
+      // Determinar departamento según categoría
+      let departamento_id = 1; // Obras (bache)
+      if (categoriaReporte === "basura") departamento_id = 2;
+      else if (categoriaReporte === "arbol_caido") departamento_id = 3;
+      else if (categoriaReporte === "cano_roto") departamento_id = 4;
+
+      // INSERTAR REPORTE
+      const payload = {
+        lat: puntoSeleccionado.lat,
+        lng: puntoSeleccionado.lng,
+        categoria: categoriaReporte,
+        detalle: detalle || null,
+        nombre,
+        celular,
+        barrio,
+        fotos_url: urls,
+        estado: "pendiente",
+        departamento_id
+      };
+
+      console.log("Insertando reporte:", payload);
+
+      const { data: reporteData, error: insertErr } = await supabase
+        .from("reportes")
+        .insert(payload)
+        .select();
+
+      if (insertErr) {
+        throw insertErr;
+      }
+
+      // ÉXITO
+      console.log("Reporte creado:", reporteData);
+      alert(`¡Gracias ${nombre}! Tu reporte fue enviado exitosamente.`);
+
+      // Limpiar formulario
+      form.style.display = "none";
+      fotos = [];
+      document.getElementById("fotosContainer").innerHTML = "";
+      categoriaReporte = null;
+      document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById("resumenReporte").style.display = "none";
+      document.getElementById("sendReporte").style.display = "none";
+
+      ["nombre","celular","barrio","detalle"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+
+      // Recargar reportes en el mapa
+      await cargarReportes();
+      renderMapa();
+
+    } catch (error) {
+      console.error("Error al enviar reporte:", error);
+      alert(`Error al enviar el reporte: ${error.message}`);
+    } finally {
       sendBtn.disabled = false;
       sendBtn.textContent = "Enviar reporte";
-      return;
     }
-
-    let departamento_id = 1;
-    if (categoriaReporte === "basura") departamento_id = 2;
-    else if (categoriaReporte === "arbol_caido") departamento_id = 3;
-    else if (categoriaReporte === "cano_roto") departamento_id = 4;
-
-    const payload = {
-      lat:puntoSeleccionado.lat,
-      lng:puntoSeleccionado.lng,
-      categoria:categoriaReporte,
-      detalle:detalle || null,
-      nombre, celular, barrio,
-      fotos_url:urls,
-      estado:"pendiente",
-      departamento_id
-    };
-
-    await supabase.from("reportes").insert(payload);
-
-    alert("¡Gracias! Tu reporte fue enviado.");
-    form.style.display = "none";
-    fotos = [];
-    document.getElementById("fotosContainer").innerHTML = "";
-    categoriaReporte = null;
-    document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
-    document.getElementById("resumenReporte").style.display = "none";
-    document.getElementById("sendReporte").style.display = "none";
-
-    ["nombre","celular","barrio","detalle"].forEach(id => {
-      document.getElementById(id).value = "";
-    });
-
-    await cargarReportes();
-    renderMapa();
-
-    sendBtn.disabled = false;
-    sendBtn.textContent = "Enviar reporte";
   };
 }
 
