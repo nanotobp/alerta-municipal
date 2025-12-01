@@ -29,10 +29,30 @@
     gtag('config', 'G-L45KW3KDSZ');
   </script>
 
-
-
+<!-- Estilos para cámara y fotos centradas -->
 <style>
-  /* Foto capturada centrada y sin desbordes */
+  /* Video de la cámara - centrado y sin desbordes */
+  #camera {
+    max-width: 100%;
+    max-height: 400px;
+    display: block;
+    margin: 15px auto;
+    border-radius: 10px;
+    object-fit: contain;
+    background: #000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  /* Contenedor de fotos capturadas */
+  #fotosContainer {
+    width: 100%;
+    max-width: 100%;
+    text-align: center;
+    padding: 0 10px;
+    box-sizing: border-box;
+  }
+
+  /* Foto capturada individual */
   .foto-capturada {
     max-width: 100%;
     max-height: 260px;
@@ -42,25 +62,51 @@
     object-fit: contain;
     background: #000;
   }
-.foto-capturada {
-  max-width: 100%;
-  max-height: 260px;
-  display: block;
-  margin: 10px auto;
-  border-radius: 10px;
-  object-fit: contain;
-  background: #000;
-}
 
-#fotosContainer {
-  width: 100%;
-  text-align: center;
-}
+  /* Miniatura de foto en la vista previa */
+  .foto-thumb {
+    display: inline-block;
+    position: relative;
+    margin: 8px;
+    max-width: 100%;
+  }
 
-  /* Contenedor que evita saltos */
-  #fotosContainer {
-    width: 100%;
-    text-align: center;
+  .foto-thumb img {
+    max-width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    border-radius: 10px;
+    display: block;
+    margin: auto;
+    background: #000;
+  }
+
+  .remove-photo {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(211, 47, 47, 0.9);
+    color: white;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: bold;
+    transition: background 0.2s;
+  }
+
+  .remove-photo:hover {
+    background: rgba(211, 47, 47, 1);
+  }
+
+  /* Asegurar que el formulario no genere overflow horizontal */
+  .form-card {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 </style>
 
@@ -165,8 +211,6 @@
       <textarea id="detalle" rows="3"
         placeholder="Descripción detallada del problema (opcional)"></textarea>
           
-
-
       <div class="form-actions-centered">
         <button id="takePhoto" class="primary-btn">Tomar foto</button>
       </div>
