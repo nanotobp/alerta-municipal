@@ -6,34 +6,53 @@ document.addEventListener("DOMContentLoaded", async () => {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXFmdGhpdXF3enVzdGhqY2p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MTI1NjUsImV4cCI6MjA3OTk4ODU2NX0.O9AaAi34paGxTc7ek5FTgouuTuh0J9c6hLAgik_EpWE";
 
   let diasFiltro = 30;
-  let mapa, heatLayer;
+  let mapa = null;
+  let heatLayer = null;
 
   let reportes = [];
   let acciones = [];
+  let combinados = [];
 
   // ======================================================
-  // CARGA DE REPORTES
+  // FINAL: usamos los KPI reales del worker
+  // ======================================================
+  async function cargarKPI() {
+    try {
+      const res = await fetch(WORKER_URL + "/estadisticas");
+      const data = await res.json();
+      return data;
+    } catch (e) {
+      console.error("Error KPI:", e);
+      return {};
+    }
+  }
+
+  // ======================================================
+  // CARGA DE REPORTES CIUDADANOS
   // ======================================================
   async function cargarReportes() {
     try {
-      const r2 = await fetch(WORKER_URL + "/listarReportes", {
-        headers: { Authorization: "Bearer " + (localStorage.getItem("asu_jwt") || "") }
+      const res = await fetch(WORKER_URL + "/listarReportes", {
+        headers: {
+          Authorization: "Bearer " + (localStorage.getItem("asu_jwt") || "")
+        }
       });
 
-      const j2 = await r2.json();
+      const j = await res.json();
 
-      if (Array.isArray(j2.data)) return j2.data;
-      if (Array.isArray(j2.reportes)) return j2.reportes;
+      if (Array.isArray(j.data)) return j.data;
+      if (Array.isArray(j.reportes)) return j.reportes;
 
       return [];
+
     } catch (e) {
-      console.error("Error cargando reportes:", e);
+      console.error("Error reportes:", e);
       return [];
     }
   }
 
   // ======================================================
-  // CARGA DE ACCIONES MUNICIPALES
+  // CARGA DE ACCIONES MUNICIPALES (Supabase)
   // ======================================================
   async function cargarAcciones() {
     try {
@@ -50,12 +69,33 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       const data = await res.json();
+
       return Array.isArray(data) ? data : [];
 
     } catch (e) {
-      console.error("Error cargando acciones:", e);
+      console.error("Error acciones:", e);
       return [];
     }
+  }
+
+  // ======================================================
+  // MERGE PARA HEATMAP
+  // ======================================================
+  function generarCombinados() {
+    combinados = [
+      ...reportes.map(r => ({
+        tipo: "reporte",
+        lat: r.lat,
+        lng: r.lng,
+        created_at: r.created_at
+      })),
+      ...acciones.map(a => ({
+        tipo: "accion",
+        lat: a.lat,
+        lng: a.lng,
+        created_at: a.created_at
+      }))
+    ];
   }
 
   // ======================================================
@@ -65,11 +105,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     mapa = L.map("mapaStats").setView([-25.3, -57.63], 12);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap"
+      maxZoom: 19
     }).addTo(mapa);
 
-    setTimeout(() => mapa.invalidateSize(), 500);
+    setTimeout(() => mapa.invalidateSize(), 400);
   }
 
   function limpiarHeat() {
@@ -80,30 +119,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ======================================================
-  // HEATMAP PRO — REPORTES + ACCIONES
+  // HEATMAP PRO REAL
   // ======================================================
   function renderHeat() {
+
     limpiarHeat();
 
     const minDate = diasFiltro === "global"
       ? null
       : new Date(Date.now() - diasFiltro * 86400000);
 
-    const puntosReportes = reportes
-      .filter(r => r.lat && r.lng)
-      .filter(r => !minDate || new Date(r.created_at) >= minDate)
-      .map(r => [r.lat, r.lng, 0.55]);
+    const puntos = combinados
+      .filter(p => p.lat && p.lng)
+      .filter(p => !minDate || new Date(p.created_at) >= minDate)
+      .map(p => [
+        p.lat,
+        p.lng,
+        p.tipo === "accion" ? 0.75 : 0.55
+      ]);
 
-    const puntosAcciones = acciones
-      .filter(a => a.lat && a.lng)
-      .filter(a => !minDate || new Date(a.created_at) >= minDate)
-      .map(a => [a.lat, a.lng, 0.75]);
+    if (!puntos.length) return;
 
-    const todos = [...puntosReportes, ...puntosAcciones];
-
-    if (!todos.length) return;
-
-    heatLayer = L.heatLayer(todos, {
+    heatLayer = L.heatLayer(puntos, {
       radius: 32,
       blur: 18,
       maxZoom: 17,
@@ -120,9 +157,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ======================================================
-  // TABLA (solo reportes)
+  // TABLA (SOLO REPORTES)
   // ======================================================
   function renderTabla() {
+
     const tbody = document.getElementById("tablaStats");
 
     const minDate = diasFiltro === "global"
@@ -145,11 +183,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // ======================================================
-  // FILTROS (TABS)
+  // TABS DE FILTRO
   // ======================================================
-  function activarBoton(boton) {
-    document.querySelectorAll(".filtro-tiempo").forEach(b => b.classList.remove("active"));
-    boton.classList.add("active");
+  function activar(btn) {
+    document.querySelectorAll(".filtro-tiempo")
+      .forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
   }
 
   document.querySelectorAll(".filtro-tiempo").forEach(btn => {
@@ -158,7 +197,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         ? "global"
         : Number(btn.dataset.dias);
 
-      activarBoton(btn);
+      activar(btn);
+
       renderTabla();
       renderHeat();
     });
@@ -167,8 +207,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ======================================================
   // BOOTSTRAP
   // ======================================================
+  const kpi = await cargarKPI(); // ahora sí lo usamos
   reportes = await cargarReportes();
   acciones = await cargarAcciones();
+  generarCombinados();
 
   initMapa();
   renderTabla();
