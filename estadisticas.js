@@ -6,16 +6,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXFmdGhpdXF3enVzdGhqY2p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MTI1NjUsImV4cCI6MjA3OTk4ODU2NX0.O9AaAi34paGxTc7ek5FTgouuTuh0J9c6hLAgik_EpWE";
 
   let diasFiltro = 30;
-  let mapa = null;
-  let heatLayer = null;
+  let mapa, heatLayer;
 
-  let reportes = [];     // SOLO reportes ciudadanos
-  let acciones = [];     // SOLO acciones municipales
-  let combinados = [];   // Para el HEATMAP
+  let reportes = [];
+  let acciones = [];
 
-  // ================================================
-  //  CARGA REPORTES (solo ciudadanos)
-  // ================================================
+  // ======================================================
+  // CARGA DE REPORTES
+  // ======================================================
   async function cargarReportes() {
     try {
       const r2 = await fetch(WORKER_URL + "/listarReportes", {
@@ -34,9 +32,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // ================================================
-  //  CARGA ACCIONES MUNICIPALES
-  // ================================================
+  // ======================================================
+  // CARGA DE ACCIONES MUNICIPALES
+  // ======================================================
   async function cargarAcciones() {
     try {
       const fechaMin = new Date(Date.now() - 90 * 86400000).toISOString();
@@ -60,29 +58,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // ================================================
-  // MERGE PARA EL HEATMAP
-  // ================================================
-  function generarCombinados() {
-    combinados = [
-      ...reportes.map(r => ({
-        tipo: "reporte",
-        lat: r.lat,
-        lng: r.lng,
-        created_at: r.created_at
-      })),
-      ...acciones.map(a => ({
-        tipo: "accion",
-        lat: a.lat,
-        lng: a.lng,
-        created_at: a.created_at
-      }))
-    ];
-  }
-
-  // ================================================
+  // ======================================================
   // MAPA
-  // ================================================
+  // ======================================================
   function initMapa() {
     mapa = L.map("mapaStats").setView([-25.3, -57.63], 12);
 
@@ -91,10 +69,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       attribution: "© OpenStreetMap"
     }).addTo(mapa);
 
-    // FIX visual
-    setTimeout(() => {
-      mapa.invalidateSize();
-    }, 500);
+    setTimeout(() => mapa.invalidateSize(), 500);
   }
 
   function limpiarHeat() {
@@ -104,36 +79,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // ================================================
-  // HEATMAP PRO
-  // ================================================
+  // ======================================================
+  // HEATMAP PRO — REPORTES + ACCIONES
+  // ======================================================
   function renderHeat() {
     limpiarHeat();
 
-    const puntos = combinados.filter(p => {
-      if (!p.lat || !p.lng) return false;
+    const minDate = diasFiltro === "global"
+      ? null
+      : new Date(Date.now() - diasFiltro * 86400000);
 
-      if (diasFiltro === "global") return true;
+    const puntosReportes = reportes
+      .filter(r => r.lat && r.lng)
+      .filter(r => !minDate || new Date(r.created_at) >= minDate)
+      .map(r => [r.lat, r.lng, 0.55]);
 
-      const f = new Date(p.created_at);
-      const min = new Date(Date.now() - diasFiltro * 86400000);
+    const puntosAcciones = acciones
+      .filter(a => a.lat && a.lng)
+      .filter(a => !minDate || new Date(a.created_at) >= minDate)
+      .map(a => [a.lat, a.lng, 0.75]);
 
-      return f >= min;
-    })
-    .map(p => [p.lat, p.lng, p.tipo === "accion" ? 0.75 : 0.55]);
+    const todos = [...puntosReportes, ...puntosAcciones];
 
-    if (!puntos.length) return;
+    if (!todos.length) return;
 
-    heatLayer = L.heatLayer(puntos, {
-      radius: 28,
+    heatLayer = L.heatLayer(todos, {
+      radius: 32,
       blur: 18,
       maxZoom: 17,
       minOpacity: 0.35,
-      max: 1.0,
       gradient: {
-        0.1: "#ffd1d1",
-        0.3: "#ff6b6b",
-        0.6: "#d32f2f",
+        0.2: "#ffdede",
+        0.4: "#ff7b7b",
+        0.7: "#d32f2f",
         1.0: "#7f0000"
       }
     });
@@ -141,11 +119,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     heatLayer.addTo(mapa);
   }
 
-  // ================================================
-  // TABLA (solo muestra reportes ciudadanos, no acciones)
-  // ================================================
-  function renderTabla(filtrados) {
+  // ======================================================
+  // TABLA (solo reportes)
+  // ======================================================
+  function renderTabla() {
     const tbody = document.getElementById("tablaStats");
+
+    const minDate = diasFiltro === "global"
+      ? null
+      : new Date(Date.now() - diasFiltro * 86400000);
+
+    const filtrados = reportes.filter(r =>
+      !minDate || new Date(r.created_at) >= minDate
+    );
 
     tbody.innerHTML = filtrados.map(r => `
       <tr>
@@ -158,43 +144,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     `).join("");
   }
 
-  // ================================================
-  // FILTROS
-  // ================================================
-  function filtrar() {
-    let filtrados = [];
-
-    if (diasFiltro === "global") {
-      filtrados = reportes;
-    } else {
-      const min = new Date(Date.now() - diasFiltro * 86400000);
-
-      filtrados = reportes.filter(r => {
-        if (!r.created_at) return false;
-        return new Date(r.created_at) >= min;
-      });
-    }
-
-    renderTabla(filtrados);
-    renderHeat();  // usa combinados
+  // ======================================================
+  // FILTROS (TABS)
+  // ======================================================
+  function activarBoton(boton) {
+    document.querySelectorAll(".filtro-tiempo").forEach(b => b.classList.remove("active"));
+    boton.classList.add("active");
   }
 
   document.querySelectorAll(".filtro-tiempo").forEach(btn => {
     btn.addEventListener("click", () => {
-      const d = btn.dataset.dias;
-      diasFiltro = d === "global" ? "global" : Number(d);
-      filtrar();
+      diasFiltro = btn.dataset.dias === "global"
+        ? "global"
+        : Number(btn.dataset.dias);
+
+      activarBoton(btn);
+      renderTabla();
+      renderHeat();
     });
   });
 
-  // ================================================
+  // ======================================================
   // BOOTSTRAP
-  // ================================================
-  reportes = await cargarReportes();   // ciudadanos
-  acciones = await cargarAcciones();   // municipales
-  generarCombinados();                 // merge PRO
+  // ======================================================
+  reportes = await cargarReportes();
+  acciones = await cargarAcciones();
 
   initMapa();
-  filtrar();
+  renderTabla();
+  renderHeat();
 
 });
