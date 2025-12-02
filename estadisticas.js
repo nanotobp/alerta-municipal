@@ -20,15 +20,41 @@ document.addEventListener("DOMContentLoaded", async () => {
       const res = await fetch(WORKER_URL + "/estadisticas");
       const json = await res.json();
 
-      const r2 = await fetch(WORKER_URL + "/listarReportes", {
-        headers: { Authorization: "Bearer " + (localStorage.getItem("asu_jwt") || "") }
-      });
+      // =========================
+//  REPORTES + ACCIONES (MERGE)
+// =========================
+const r2 = await fetch(WORKER_URL + "/listarReportes", {
+  headers: { Authorization: "Bearer " + (localStorage.getItem("asu_jwt") || "") }
+});
+const j2 = await r2.json();
 
-      const j2 = await r2.json();
-      if (Array.isArray(j2.data)) return j2.data;
-      if (Array.isArray(j2.reportes)) return j2.reportes;
+let listaReportes = [];
+if (Array.isArray(j2.data)) listaReportes = j2.data;
+else if (Array.isArray(j2.reportes)) listaReportes = j2.reportes;
+else listaReportes = [];
 
-      return [];
+// --- Merge PRO: reportes + acciones ---
+const acc = await cargarAcciones();
+acciones = acc; // actualizamos global
+
+// Creamos un dataset combinado para el heatmap
+const combinados = [
+  ...listaReportes.map(r => ({
+    tipo: "reporte",
+    lat: r.lat,
+    lng: r.lng,
+    created_at: r.created_at
+  })),
+  ...acc.map(a => ({
+    tipo: "accion",
+    lat: a.lat,
+    lng: a.lng,
+    created_at: a.created_at
+  }))
+];
+
+return combinados;
+
     } catch (e) {
       console.error("Error cargando reportes:", e);
       return [];
