@@ -1,221 +1,393 @@
-document.addEventListener("DOMContentLoaded", async () => {
+// =========================================================
+// ESTADÍSTICAS v3 PRO – con mapa de densidad Leaflet
+// =========================================================
 
-  const WORKER_URL = "https://cold-base-33cf.nanotobp.workers.dev";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  let diasFiltro = 7;
-  let mapa, heatLayer;
+const SUPABASE_URL  = "https://wreqfthiuqwzusthjcjv.supabase.co";
+const SUPABASE_ANON = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyZXFmdGhpdXF3enVzdGhqY2p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MTI1NjUsImV4cCI6MjA3OTk4ODU2NX0.O9AaAi34paGxTc7ek5FTgouuTuh0J9c6hLAgik_EpWE`;
 
-  let dataset = [];         // reportes + acciones
-  let datasetReportes = []; // solo reportes
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-  // ===========================
-  // CARGA ÚNICA DEL WORKER
-  // ===========================
-  async function cargarDatos() {
-    const res = await fetch(WORKER_URL + "/estadisticas");
-    const json = await res.json();
+// =======================================
+// ESTADO
+// =======================================
+let dataReportes = [];
+let dataAcciones = [];
+let categorias   = [];
+let departamentos= [];
 
-    // KPIs
-    document.getElementById("kpiReportes").innerText = json.total_reportes;
-    document.getElementById("kpiAcciones").innerText = json.total_acciones;
-    document.getElementById("kpiSolucion").innerText = json.porcentaje_solucion + "%";
-    document.getElementById("kpiTiempo").innerText = json.tiempo_promedio || "--";
+let rangoDias   = 7;
+let deptoFiltro = "todos";
 
-    datasetReportes = json.ultimos_reportes || [];
+let chartReportes, chartAcciones, chartLinea, chartDeptos;
 
-    dataset = [
-      ...json.ultimos_reportes.map(r => ({
-        tipo: "reporte",
-        lat: r.lat,
-        lng: r.lng,
-        categoria: r.categoria,
-        departamento: r.departamento_id,
-        created_at: r.created_at
-      })),
-      ...json.ultimas_acciones.map(a => ({
-        tipo: "accion",
-        lat: a.lat,
-        lng: a.lng,
-        categoria: a.categoria,
-        departamento: a.departamento_id,
-        created_at: a.created_at
-      }))
-    ];
+// heatmap
+let mapHeat;
+let heatLayer;
 
-    // graficos
-    renderGraficos(json);
+// =======================================
+// MAPEOS CATEGORÍAS (conceptual)
+// =======================================
+//
+// Reportes ciudadanos → Acciones municipales relacionadas
+//
+const MAPEO = {
+  baches: "bacheo",
+  basural: "limpieza",
+  arbol_caido: "arboles",
+  cano_roto: "agua"
+};
+
+// =======================================
+// HELPERS
+// =======================================
+function dentroRango(fechaStr) {
+  const fecha = new Date(fechaStr);
+  const hoy   = new Date();
+  const desde = new Date();
+  desde.setDate(hoy.getDate() - (rangoDias - 1));
+  desde.setHours(0,0,0,0);
+  return fecha >= desde && fecha <= hoy;
+}
+
+function filtrarDepto(arr) {
+  if (deptoFiltro === "todos") return arr;
+  return arr.filter(x => x.departamento_id == deptoFiltro);
+}
+
+function groupBy(arr, key) {
+  const res = {};
+  arr.forEach(a => {
+    const k = a[key];
+    if (!res[k]) res[k] = 0;
+    res[k]++;
+  });
+  return res;
+}
+
+// para línea
+function groupByDia(arr) {
+  const out = {};
+  arr.forEach(a => {
+    const d = new Date(a.created_at).toISOString().slice(0,10);
+    if (!out[d]) out[d] = { r:0, a:0 };
+    if (a.__tipo === "reporte") out[d].r++;
+    if (a.__tipo === "accion")  out[d].a++;
+  });
+  return out;
+}
+
+// =======================================
+// KPI: tiempo promedio de resolución
+// =======================================
+function calcularTiempoPromedio(dataRep, dataAcc) {
+  const tiempos = [];
+
+  dataRep.forEach(rep => {
+    if (rep.estado !== "solucionado") return;
+    if (!rep.id) return;
+    const acc = dataAcc.find(a => a.reporte_id === rep.id);
+    if (!acc) return;
+
+    const fr = new Date(rep.created_at);
+    const fa = new Date(acc.created_at);
+    const diff = (fa - fr) / 3600000; // horas
+    tiempos.push(diff);
+  });
+
+  if (!tiempos.length) return "--";
+
+  const promedio = tiempos.reduce((a,b)=>a+b,0) / tiempos.length;
+
+  if (promedio < 48) return `${promedio.toFixed(1)} h`;
+  return `${(promedio/24).toFixed(1)} d`;
+}
+
+// =======================================
+// KPI Solucionados
+// =======================================
+function calcularSolucionados(arr) {
+  const tot = arr.length;
+  if (!tot) return "--";
+  const sol = arr.filter(r => r.estado === "solucionado").length;
+  return ((sol/tot)*100).toFixed(1) + "%";
+}
+
+// =======================================
+// CHART FACTORY
+// =======================================
+function destruirPrevio(ref){
+  if (ref) ref.destroy();
+}
+
+function crearBarChart(ctx, labels, values, colors){
+  return new Chart(ctx, {
+    type:"bar",
+    data:{
+      labels,
+      datasets:[{
+        label:"Cantidad",
+        data:values,
+        backgroundColor:colors
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{display:false} }
+    }
+  });
+}
+
+function crearLineaChart(ctx, dataObj){
+  const fechas = Object.keys(dataObj).sort();
+  const rep = fechas.map(f => dataObj[f].r);
+  const acc = fechas.map(f => dataObj[f].a);
+
+  return new Chart(ctx, {
+    type:"line",
+    data:{
+      labels:fechas,
+      datasets:[
+        {
+          label:"Reportes",
+          data:rep,
+          borderColor:"#d32f2f",
+          tension:.3
+        },
+        {
+          label:"Acciones",
+          data:acc,
+          borderColor:"#1e88e5",
+          tension:.3
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{position:"bottom"}}
+    }
+  });
+}
+
+function crearDeptosChart(ctx, labels, values){
+  return new Chart(ctx,{
+    type:"bar",
+    data:{
+      labels,
+      datasets:[{
+        label:"Total",
+        data:values,
+        backgroundColor:"#6366f1"
+      }]
+    },
+    options:{
+      indexAxis:"y",
+      responsive:true,
+      plugins:{legend:{display:false}}
+    }
+  });
+}
+
+// =======================================
+// HEATMAP (densidad con círculos Leaflet)
+// =======================================
+function initHeatmap() {
+  if (mapHeat) return;
+
+  mapHeat = L.map("mapHeat", {
+    center: [-25.282, -57.63],
+    zoom: 12,
+    zoomControl: false
+  });
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19
+  }).addTo(mapHeat);
+
+  heatLayer = L.layerGroup().addTo(mapHeat);
+
+  // fix de tamaño al entrar a la vista
+  setTimeout(() => {
+    mapHeat.invalidateSize();
+  }, 300);
+}
+
+function renderHeatmap(repFil, accFil) {
+  if (!window.L) return;
+  initHeatmap();
+
+  heatLayer.clearLayers();
+
+  const hoy = new Date();
+
+  // función para calcular peso por antigüedad (más nuevo = más peso)
+  function pesoPorFecha(fechaStr){
+    if (!fechaStr) return 0.4;
+    const f  = new Date(fechaStr);
+    const ms = hoy - f;
+    const dias = ms / 86400000;
+    const factor = 1 - (dias / rangoDias);
+    return Math.max(0.2, Math.min(1, factor));
   }
 
-  // ===========================
-  // MAPA
-  // ===========================
-  function initMapa() {
-    mapa = L.map("mapaStats").setView([-25.3, -57.63], 12);
+  // reportes = rojo
+  repFil.forEach(r=>{
+    if (!r.lat || !r.lng) return;
+    const w = pesoPorFecha(r.created_at);
+    L.circle([r.lat, r.lng], {
+      radius: 40,
+      color: "transparent",
+      fillColor: "#ef4444",
+      fillOpacity: 0.08 + (0.25 * w)
+    }).addTo(heatLayer);
+  });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(mapa);
+  // acciones = azul
+  accFil.forEach(a=>{
+    if (!a.lat || !a.lng) return;
+    const w = pesoPorFecha(a.created_at);
+    L.circle([a.lat, a.lng], {
+      radius: 40,
+      color: "transparent",
+      fillColor: "#1d4ed8",
+      fillOpacity: 0.08 + (0.25 * w)
+    }).addTo(heatLayer);
+  });
+}
 
-    setTimeout(() => mapa.invalidateSize(), 300);
-  }
+// =======================================
+// RENDER PRINCIPAL
+// =======================================
+function renderTodo(){
+  const repFil = filtrarDepto(dataReportes.filter(r=>dentroRango(r.created_at)));
+  const accFil = filtrarDepto(dataAcciones.filter(r=>dentroRango(r.created_at)));
 
-  function limpiarHeat() {
-    if (heatLayer) mapa.removeLayer(heatLayer);
-  }
+  // KPIs
+  document.getElementById("kpiReportes").textContent = repFil.length;
+  document.getElementById("kpiAcciones").textContent = accFil.length;
+  document.getElementById("kpiSolucion").textContent = calcularSolucionados(repFil);
+  document.getElementById("kpiTiempo").textContent  = calcularTiempoPromedio(repFil, accFil);
 
-  function renderHeat() {
+  // Agrupación por categoría
+  const repGroup = groupBy(repFil, "categoria");
+  const accGroup = groupBy(accFil, "categoria");
 
-    limpiarHeat();
+  const repLabels = [], repValues = [], repColors=[];
+  const accLabels = [], accValues = [], accColors=[];
 
-    const minDate = diasFiltro === "global"
-      ? null
-      : new Date(Date.now() - diasFiltro * 86400000);
+  categorias.forEach(cat=>{
+    repLabels.push(cat.nombre);
+    repValues.push(repGroup[cat.slug] || 0);
+    repColors.push(cat.color || "#d32f2f");
 
-    const puntos = dataset
-      .filter(p => p.lat && p.lng)
-      .filter(p => !minDate || new Date(p.created_at) >= minDate)
-      .map(p => [p.lat, p.lng, p.tipo === "accion" ? 0.8 : 0.55]);
+    accLabels.push(cat.nombre);
+    accValues.push(accGroup[cat.slug] || 0);
+    accColors.push(cat.color || "#1e88e5");
+  });
 
-    if (puntos.length === 0) return;
+  // Línea
+  repFil.forEach(r=> { r.__tipo="reporte"; });
+  accFil.forEach(a=> { a.__tipo="accion";  });
 
-    heatLayer = L.heatLayer(puntos, {
-      radius: 33,
-      blur: 20,
-      minOpacity: 0.35,
-      gradient: {
-        0.25: "#ffb3b3",
-        0.5: "#ff6b6b",
-        0.8: "#d32f2f",
-        1.0: "#7f0000"
-      }
-    });
+  const timelineData = groupByDia([...repFil, ...accFil]);
 
-    heatLayer.addTo(mapa);
-  }
+  // Deptos
+  const depGroup = {};
+  repFil.forEach(r=>{
+    if(!depGroup[r.departamento_id]) depGroup[r.departamento_id]=0;
+    depGroup[r.departamento_id]++;
+  });
+  accFil.forEach(a=>{
+    if(!depGroup[a.departamento_id]) depGroup[a.departamento_id]=0;
+    depGroup[a.departamento_id]++;
+  });
 
-  // ===========================
-  // TABLA
-  // ===========================
-  function renderTabla() {
-    const tbody = document.getElementById("tablaStats");
+  const depLabels=[], depValues=[];
+  departamentos.forEach(d=>{
+    depLabels.push(d.nombre);
+    depValues.push(depGroup[d.id] || 0);
+  });
 
-    const minDate = diasFiltro === "global"
-      ? null
-      : new Date(Date.now() - diasFiltro * 86400000);
+  // CHARTS
+  destruirPrevio(chartReportes);
+  destruirPrevio(chartAcciones);
+  destruirPrevio(chartLinea);
+  destruirPrevio(chartDeptos);
 
-    const filtrados = datasetReportes.filter(r =>
-      !minDate || new Date(r.created_at) >= minDate
-    );
+  chartReportes = crearBarChart(
+    document.getElementById("chartReportes"),
+    repLabels, repValues, repColors
+  );
+  chartAcciones = crearBarChart(
+    document.getElementById("chartAcciones"),
+    accLabels, accValues, accColors
+  );
+  chartLinea = crearLineaChart(
+    document.getElementById("chartLinea"),
+    timelineData
+  );
+  chartDeptos = crearDeptosChart(
+    document.getElementById("chartDeptos"),
+    depLabels, depValues
+  );
 
-    tbody.innerHTML = filtrados.map(r => `
-      <tr>
-        <td>${r.id}</td>
-        <td>${r.categoria}</td>
-        <td>${r.barrio || "-"}</td>
-        <td>${r.estado}</td>
-        <td>${new Date(r.created_at).toLocaleString("es-PY")}</td>
-      </tr>
-    `).join("");
-  }
+  // HEATMAP
+  renderHeatmap(repFil, accFil);
+}
 
-  // ===========================
-  // GRÁFICOS
-  // ===========================
-  let chart1, chart2, chart3, chart4;
+// =======================================
+// INIT DATOS
+// =======================================
+async function cargarDatos(){
+  const [rep, acc, cat, dep] = await Promise.all([
+    supabase.from("reportes").select("*"),
+    supabase.from("acciones_municipales").select("*"),
+    supabase.from("categorias_municipales").select("*").order("id"),
+    supabase.from("departamentos").select("*").order("id")
+  ]);
 
-  function renderGraficos(data) {
+  dataReportes   = rep.data   || [];
+  dataAcciones   = acc.data   || [];
+  categorias     = cat.data   || [];
+  departamentos  = dep.data   || [];
 
-    if (chart1) chart1.destroy();
-    if (chart2) chart2.destroy();
-    if (chart3) chart3.destroy();
-    if (chart4) chart4.destroy();
+  // llenar select depto
+  const sel = document.getElementById("selectDepto");
+  departamentos.forEach(d=>{
+    const op = document.createElement("option");
+    op.value = d.id;
+    op.textContent = d.nombre;
+    sel.appendChild(op);
+  });
 
-    chart1 = new Chart(document.getElementById("chartCategorias"), {
-      type: "bar",
-      data: {
-        labels: Object.keys(data.categorias_conteo),
-        datasets: [{
-          label: "Reportes",
-          data: Object.values(data.categorias_conteo),
-          backgroundColor: "#d32f2f"
-        }]
-      }
-    });
+  renderTodo();
+}
 
-    chart2 = new Chart(document.getElementById("chartComparativa"), {
-      type: "line",
-      data: {
-        labels: data.comparativa_fechas,
-        datasets: [
-          {
-            label: "Reportes",
-            data: data.comparativa_reportes,
-            borderColor: "#d32f2f",
-            fill: false
-          },
-          {
-            label: "Acciones",
-            data: data.comparativa_acciones,
-            borderColor: "#0038A8",
-            fill: false
-          }
-        ]
-      }
-    });
-
-    chart3 = new Chart(document.getElementById("chartDeptos"), {
-      type: "bar",
-      data: {
-        labels: Object.keys(data.departamentos_conteo),
-        datasets: [{
-          label: "Reportes",
-          data: Object.values(data.departamentos_conteo),
-          backgroundColor: "#0038A8"
-        }]
-      }
-    });
-
-    chart4 = new Chart(document.getElementById("chartSemana"), {
-      type: "line",
-      data: {
-        labels: data.semana_fechas,
-        datasets: [{
-          label: "Tendencia semanal",
-          data: data.semana_conteo,
-          borderColor: "#d32f2f",
-          fill: false
-        }]
-      }
-    });
-  }
-
-  // ===========================
-  // TABS
-  // ===========================
-  function activar(btn) {
-    document.querySelectorAll(".filtro-tiempo")
-      .forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-  }
-
-  document.querySelectorAll(".filtro-tiempo").forEach(btn => {
-    btn.addEventListener("click", () => {
-
-      diasFiltro = btn.dataset.dias === "global"
-        ? "global"
-        : Number(btn.dataset.dias);
-
-      activar(btn);
-
-      renderTabla();
-      renderHeat();
+// =======================================
+// EVENTOS UI
+// =======================================
+function bindUI(){
+  document.querySelectorAll(".filtro-tiempo").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(".filtro-tiempo")
+              .forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      rangoDias = parseInt(btn.dataset.dias);
+      renderTodo();
     });
   });
 
-  // ===========================
-  // BOOTSTRAP
-  // ===========================
-  await cargarDatos();
-  initMapa();
-  renderTabla();
-  renderHeat();
+  document.getElementById("selectDepto").addEventListener("change", e=>{
+    deptoFiltro = e.target.value;
+    renderTodo();
+  });
+}
 
-});
+// =======================================
+// START
+// =======================================
+(async () => {
+  await cargarDatos();
+  bindUI();
+})();
