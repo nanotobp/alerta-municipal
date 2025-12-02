@@ -9,61 +9,37 @@ document.addEventListener("DOMContentLoaded", async () => {
   let mapa = null;
   let heatLayer = null;
 
-  let reportes = [];
-  let acciones = [];
+  let reportes = [];     // SOLO reportes ciudadanos
+  let acciones = [];     // SOLO acciones municipales
+  let combinados = [];   // Para el HEATMAP
 
-  // =========================
-  //  CARGA BASE DE DATOS
-  // =========================
+  // ================================================
+  //  CARGA REPORTES (solo ciudadanos)
+  // ================================================
   async function cargarReportes() {
     try {
-      const res = await fetch(WORKER_URL + "/estadisticas");
-      const json = await res.json();
+      const r2 = await fetch(WORKER_URL + "/listarReportes", {
+        headers: { Authorization: "Bearer " + (localStorage.getItem("asu_jwt") || "") }
+      });
 
-      // =========================
-//  REPORTES + ACCIONES (MERGE)
-// =========================
-const r2 = await fetch(WORKER_URL + "/listarReportes", {
-  headers: { Authorization: "Bearer " + (localStorage.getItem("asu_jwt") || "") }
-});
-const j2 = await r2.json();
+      const j2 = await r2.json();
 
-let listaReportes = [];
-if (Array.isArray(j2.data)) listaReportes = j2.data;
-else if (Array.isArray(j2.reportes)) listaReportes = j2.reportes;
-else listaReportes = [];
+      if (Array.isArray(j2.data)) return j2.data;
+      if (Array.isArray(j2.reportes)) return j2.reportes;
 
-// --- Merge PRO: reportes + acciones ---
-const acc = await cargarAcciones();
-acciones = acc; // actualizamos global
-
-// Creamos un dataset combinado para el heatmap
-const combinados = [
-  ...listaReportes.map(r => ({
-    tipo: "reporte",
-    lat: r.lat,
-    lng: r.lng,
-    created_at: r.created_at
-  })),
-  ...acc.map(a => ({
-    tipo: "accion",
-    lat: a.lat,
-    lng: a.lng,
-    created_at: a.created_at
-  }))
-];
-
-return combinados;
-
+      return [];
     } catch (e) {
       console.error("Error cargando reportes:", e);
       return [];
     }
   }
 
+  // ================================================
+  //  CARGA ACCIONES MUNICIPALES
+  // ================================================
   async function cargarAcciones() {
     try {
-      const fechaMin = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      const fechaMin = new Date(Date.now() - 90 * 86400000).toISOString();
 
       const url =
         `${SUPABASE_URL}/rest/v1/acciones_municipales?select=*&created_at=gte.${fechaMin}`;
@@ -84,12 +60,29 @@ return combinados;
     }
   }
 
-  reportes = await cargarReportes();
-  acciones = await cargarAcciones();
+  // ================================================
+  // MERGE PARA EL HEATMAP
+  // ================================================
+  function generarCombinados() {
+    combinados = [
+      ...reportes.map(r => ({
+        tipo: "reporte",
+        lat: r.lat,
+        lng: r.lng,
+        created_at: r.created_at
+      })),
+      ...acciones.map(a => ({
+        tipo: "accion",
+        lat: a.lat,
+        lng: a.lng,
+        created_at: a.created_at
+      }))
+    ];
+  }
 
-  // =========================
-  //  MAPA
-  // =========================
+  // ================================================
+  // MAPA
+  // ================================================
   function initMapa() {
     mapa = L.map("mapaStats").setView([-25.3, -57.63], 12);
 
@@ -97,6 +90,11 @@ return combinados;
       maxZoom: 19,
       attribution: "© OpenStreetMap"
     }).addTo(mapa);
+
+    // FIX visual
+    setTimeout(() => {
+      mapa.invalidateSize();
+    }, 500);
   }
 
   function limpiarHeat() {
@@ -106,47 +104,50 @@ return combinados;
     }
   }
 
-  // =========================
-  //  HEATMAP (PRO)
-  // =========================
-  function renderHeat(filtradosReportes) {
-
+  // ================================================
+  // HEATMAP PRO
+  // ================================================
+  function renderHeat() {
     limpiarHeat();
 
-    const puntosReportes = filtradosReportes
-      .filter(r => r.lat && r.lng)
-      .map(r => [r.lat, r.lng, 0.55]);
+    const puntos = combinados.filter(p => {
+      if (!p.lat || !p.lng) return false;
 
-    const puntosAcciones = acciones
-      .filter(a => a.lat && a.lng)
-      .filter(a => {
-        if (diasFiltro === "global") return true;
-        const fecha = new Date(a.created_at);
-        return fecha >= new Date(Date.now() - diasFiltro * 86400000);
-      })
-      .map(a => [a.lat, a.lng, 0.75]);
+      if (diasFiltro === "global") return true;
 
-    const todos = [...puntosReportes, ...puntosAcciones];
+      const f = new Date(p.created_at);
+      const min = new Date(Date.now() - diasFiltro * 86400000);
 
-    if (!todos.length) return;
+      return f >= min;
+    })
+    .map(p => [p.lat, p.lng, p.tipo === "accion" ? 0.75 : 0.55]);
 
-    heatLayer = L.heatLayer(todos, {
+    if (!puntos.length) return;
+
+    heatLayer = L.heatLayer(puntos, {
       radius: 28,
       blur: 18,
       maxZoom: 17,
       minOpacity: 0.35,
-      max: 1.0
+      max: 1.0,
+      gradient: {
+        0.1: "#ffd1d1",
+        0.3: "#ff6b6b",
+        0.6: "#d32f2f",
+        1.0: "#7f0000"
+      }
     });
 
     heatLayer.addTo(mapa);
   }
 
-  // =========================
-  //  TABLA
-  // =========================
-  function renderTabla(rows) {
+  // ================================================
+  // TABLA (solo muestra reportes ciudadanos, no acciones)
+  // ================================================
+  function renderTabla(filtrados) {
     const tbody = document.getElementById("tablaStats");
-    tbody.innerHTML = rows.map(r => `
+
+    tbody.innerHTML = filtrados.map(r => `
       <tr>
         <td>${r.id}</td>
         <td>${r.categoria || "-"}</td>
@@ -157,24 +158,25 @@ return combinados;
     `).join("");
   }
 
-  // =========================
-  //  FILTROS
-  // =========================
+  // ================================================
+  // FILTROS
+  // ================================================
   function filtrar() {
-    let filtrados;
+    let filtrados = [];
 
     if (diasFiltro === "global") {
       filtrados = reportes;
     } else {
-      const minDate = new Date(Date.now() - diasFiltro * 86400000);
+      const min = new Date(Date.now() - diasFiltro * 86400000);
+
       filtrados = reportes.filter(r => {
         if (!r.created_at) return false;
-        return new Date(r.created_at) >= minDate;
+        return new Date(r.created_at) >= min;
       });
     }
 
     renderTabla(filtrados);
-    renderHeat(filtrados);
+    renderHeat();  // usa combinados
   }
 
   document.querySelectorAll(".filtro-tiempo").forEach(btn => {
@@ -185,9 +187,13 @@ return combinados;
     });
   });
 
-  // =========================
-  // INICIALIZACIÓN
-  // =========================
+  // ================================================
+  // BOOTSTRAP
+  // ================================================
+  reportes = await cargarReportes();   // ciudadanos
+  acciones = await cargarAcciones();   // municipales
+  generarCombinados();                 // merge PRO
+
   initMapa();
   filtrar();
 
