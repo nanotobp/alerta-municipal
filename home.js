@@ -546,7 +546,10 @@ if (repErr) {
   sendBtn.textContent = "Enviar reporte";
   return;
 }
-
+// 🔥 REFRESCAR COMPLETAMENTE EL PWA DESPUÉS DE GUARDAR
+setTimeout(() => {
+  location.reload();
+}, 900);
 
     abrirModal(`
   <h2>¡Reporte enviado con éxito! 🎉</h2>
